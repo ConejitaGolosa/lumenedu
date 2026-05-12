@@ -1,0 +1,26 @@
+# Dependencias y paquetes
+/vendor/
+/node_modules/
+
+# Videos subidos por usuarios
+/public/uploads/
+
+# Configuración sensible
+/apps/config/config.php
+
+# Caché y temporales
+*.cache
+*.tmp
+*.log
+/logs/
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.user
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
