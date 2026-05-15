@@ -100,6 +100,81 @@ class Usuario {
         return false;
     }
 
+    // ── DÍAS MÍNIMOS (PROFESORES) ────────────────────────────
+    // Días de anticipación requeridos para recibir solicitudes de clase.
+    public static function getMinDias($idProfesor) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "SELECT DiasAntMinimo FROM Usuarios WHERE IdUsuario = ? AND TipoUsuario = 'Creador'"
+        );
+        $stmt->bind_param("i", $idProfesor);
+        $stmt->execute();
+        $dias = 2;
+        $stmt->bind_result($dias);
+        $stmt->fetch();
+        $stmt->close();
+        $db->cerrarConexion();
+        return (int)($dias ?? 2);
+    }
+
+    // Actualiza los días mínimos de un profesor.
+    public static function actualizarDiasMinimos($idProfesor, $dias) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "UPDATE Usuarios SET DiasAntMinimo = ? WHERE IdUsuario = ? AND TipoUsuario = 'Creador'"
+        );
+        $stmt->bind_param("ii", $dias, $idProfesor);
+        $stmt->execute();
+        // affected_rows puede ser 0 si el valor no cambió, pero la operación es válida
+        $ok = $stmt->errno === 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
+    // ── GESTIÓN DE ROLES (ADMIN) ─────────────────────────────
+    // Lista de usuarios activos no-administradores (para el panel de admin).
+    public static function getUsuariosActivos() {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "SELECT IdUsuario, NombreUsuario, TipoUsuario
+             FROM Usuarios
+             WHERE EstadoCuenta = 'Activo' AND TipoUsuario != 'Administrador'
+             ORDER BY NombreUsuario"
+        );
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
+    // Asigna un nuevo rol a un usuario (no puede aplicarse al Administrador).
+    public static function asignarRol($idUsuario, $nuevoRol) {
+        $rolesValidos = ['Creador', 'Suscriptor', 'EstudianteGratis', 'Moderador'];
+        if (!in_array($nuevoRol, $rolesValidos)) { return false; }
+
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "UPDATE Usuarios SET TipoUsuario = ?
+             WHERE IdUsuario = ? AND TipoUsuario != 'Administrador'"
+        );
+        $stmt->bind_param("si", $nuevoRol, $idUsuario);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
     // ── LOGIN ────────────────────────────────────────────────
     // Método estático: busca un usuario por NombreUsuario o Correo
     // y verifica la contraseña con password_verify.

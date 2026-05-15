@@ -146,6 +146,51 @@ switch ($action) {
         header('Location: index.php?page=viewVideo&id=' . $idVideo);
         exit;
 
+    // ── RESPONDER COMENTARIO ─────────────────────────────────
+    // Responde a un comentario en video o foro; notifica al autor del comentario padre.
+    case 'responderComentario':
+        $idPadre   = (int)($_POST['id_comentario_padre'] ?? 0);
+        $idVideo   = (int)($_POST['id_video'] ?? 0) ?: null;
+        $idForo    = (int)($_POST['id_foro']  ?? 0) ?: null;
+        $contenido = trim($_POST['contenido'] ?? '');
+
+        $redirect = $idForo
+            ? 'index.php?page=viewForo&id=' . $idForo
+            : 'index.php?page=viewVideo&id=' . $idVideo;
+
+        if (!$idPadre || empty($contenido)) {
+            $_SESSION['error'] = 'La respuesta no puede estar vacía.';
+            header('Location: ' . $redirect);
+            exit;
+        }
+
+        if (mb_strlen($contenido) > 1024) {
+            $_SESSION['error'] = 'La respuesta no puede superar 1024 caracteres.';
+            header('Location: ' . $redirect);
+            exit;
+        }
+
+        $idNuevo = Comentario::agregar($idVideo, $idUsuario, $contenido, $idForo, $idPadre);
+
+        if ($idNuevo) {
+            // Notifica al autor del comentario padre si es distinto al que responde
+            $idAutorPadre = Comentario::getAutor($idPadre);
+            if ($idAutorPadre && $idAutorPadre !== $idUsuario) {
+                $preview = mb_substr($contenido, 0, 80) . (mb_strlen($contenido) > 80 ? '…' : '');
+                $msg     = htmlspecialchars($_SESSION['usuario_nombre'])
+                         . ' respondió a tu comentario: "' . $preview . '"';
+                $ref     = $idForo ?? $idVideo;
+                require_once __DIR__ . '/../models/modelNotificacion.php';
+                Notificacion::crear($idAutorPadre, 'RespuestaComentario', $msg, $ref);
+            }
+            $_SESSION['mensaje'] = 'Respuesta publicada.';
+        } else {
+            $_SESSION['error'] = 'Error al publicar la respuesta.';
+        }
+
+        header('Location: ' . $redirect);
+        exit;
+
     default:
         header('Location: index.php');
         exit;

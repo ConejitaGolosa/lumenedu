@@ -10,16 +10,23 @@ session_start();
 // ── DESPACHO DE ACCIONES ─────────────────────────────────────
 // Mapeo acción → archivo de controlador
 $controllerMap = [
-    'login'              => 'controllerUser',
-    'logout'             => 'controllerUser',
-    'registrar'          => 'controllerUser',
-    'subirVideo'         => 'controllerVideo',
-    'publicarVideo'      => 'controllerVideo',
-    'comentarVideo'      => 'controllerVideo',
-    'revisarVideo'       => 'controllerAdmin',
-    'usarTicket'         => 'controllerTicket',
-    'solicitarClase'     => 'controllerTicket',
-    'responderSolicitud' => 'controllerTicket',
+    'login'                  => 'controllerUser',
+    'logout'                 => 'controllerUser',
+    'registrar'              => 'controllerUser',
+    'subirVideo'             => 'controllerVideo',
+    'publicarVideo'          => 'controllerVideo',
+    'comentarVideo'          => 'controllerVideo',
+    'responderComentario'    => 'controllerVideo',
+    'revisarVideo'           => 'controllerAdmin',
+    'asignarModerador'       => 'controllerAdmin',
+    'eliminarVideo'          => 'controllerAdmin',
+    'eliminarCanal'          => 'controllerAdmin',
+    'usarTicket'             => 'controllerTicket',
+    'solicitarClase'         => 'controllerTicket',
+    'responderSolicitud'     => 'controllerTicket',
+    'crearForo'              => 'controllerForo',
+    'comentarForo'           => 'controllerForo',
+    'actualizarDiasMinimos'  => 'controllerProfesor',
 ];
 
 // Si el POST llegó vacío pero hay Content-Length, el archivo excedió post_max_size
@@ -44,6 +51,7 @@ $allowedPages = [
     'viewHome', 'viewLogin', 'viewRegistro', 'viewAbout', 'viewConfirmacion',
     'viewVideos', 'viewVideo', 'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
     'viewAdminPanel', 'viewNotificaciones', 'viewTickets', 'viewSolicitudes',
+    'viewForos', 'viewForo', 'viewConfigProfesor',
 ];
 
 if (!in_array($page, $allowedPages)) {
@@ -78,6 +86,7 @@ if (isset($_SESSION['usuario_id'])) {
     <nav>
         <a href="index.php?page=viewHome">Inicio</a>
         <a href="index.php?page=viewVideos">Videos</a>
+        <a href="index.php?page=viewForos">Foros</a>
 
         <?php if (isset($_SESSION['usuario_id'])): ?>
 
@@ -85,14 +94,17 @@ if (isset($_SESSION['usuario_id'])) {
                 <a href="index.php?page=viewSubirVideo">Subir video</a>
                 <a href="index.php?page=viewMisVideos">Mis videos</a>
                 <a href="index.php?page=viewSolicitudes">Solicitudes</a>
+                <a href="index.php?page=viewConfigProfesor">Disponibilidad</a>
             <?php endif; ?>
 
             <?php if ($_SESSION['usuario_tipo'] === 'Suscriptor'): ?>
                 <a href="index.php?page=viewTickets">Mis tickets</a>
             <?php endif; ?>
 
-            <?php if ($_SESSION['usuario_tipo'] === 'Administrador'): ?>
-                <a href="index.php?page=viewAdminPanel">Admin</a>
+            <?php if (in_array($_SESSION['usuario_tipo'], ['Administrador', 'Moderador'])): ?>
+                <a href="index.php?page=viewAdminPanel">
+                    <?= $_SESSION['usuario_tipo'] === 'Administrador' ? 'Admin' : 'Moderación' ?>
+                </a>
             <?php endif; ?>
 
             <!-- Badge de notificaciones -->

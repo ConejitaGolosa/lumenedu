@@ -1,5 +1,5 @@
 <?php
-// Vista: reproductor de video individual + sección de comentarios
+// Vista: reproductor de video individual + comentarios con respuestas anidadas
 require_once __DIR__ . '/../models/modelVideo.php';
 require_once __DIR__ . '/../models/modelComentario.php';
 require_once __DIR__ . '/../models/modelTicket.php';
@@ -32,7 +32,7 @@ if (!Video::puedeVer($video, $tipoUsuario, $idUsuario, $ticketedProfs)) {
     if ($tipoUsuario === 'EstudianteGratis') {
         echo 'Este video es exclusivo para suscriptores. <a href="index.php?page=viewRegistro">Regístrate</a>.';
     } elseif ($tipoUsuario === 'Suscriptor') {
-        echo 'Necesitas un ticket con este profesor para ver su contenido. <a href="index.php?page=viewTickets">Usar un ticket</a>.';
+        echo 'Necesitas un ticket con este profesor. <a href="index.php?page=viewTickets">Usar un ticket</a>.';
     } else {
         echo 'No tienes permiso para ver este video.';
     }
@@ -54,7 +54,6 @@ $comentarios = Comentario::getByVideo($idVideo);
     <p><?= nl2br(htmlspecialchars($video['Descripcion'])) ?></p>
 <?php endif; ?>
 
-<!-- Reproductor HTML5 -->
 <video controls width="720" style="display:block; max-width:100%; margin-bottom:20px;">
     <source src="<?= htmlspecialchars($video['ArchivoVideo']) ?>"
             type="video/<?= pathinfo($video['ArchivoVideo'], PATHINFO_EXTENSION) ?>">
@@ -67,10 +66,42 @@ $comentarios = Comentario::getByVideo($idVideo);
 <h3>Comentarios (<?= count($comentarios) ?>)</h3>
 
 <?php foreach ($comentarios as $c): ?>
-    <div style="border-left:3px solid #007BFF; padding:6px 12px; margin-bottom:10px;">
+    <?php $respuestas = Comentario::getRespuestas($c['IdComentario']); ?>
+    <div style="border-left:3px solid #007BFF; padding:6px 12px; margin-bottom:12px;">
         <strong><?= htmlspecialchars($c['NombreUsuario']) ?></strong>
-        <small style="color:#666;">(<?= htmlspecialchars($c['TipoUsuario']) ?>) — <?= htmlspecialchars($c['FechaComentario']) ?></small><br>
+        <small style="color:#666;">
+            (<?= htmlspecialchars($c['TipoUsuario']) ?>) — <?= htmlspecialchars($c['FechaComentario']) ?>
+        </small><br>
         <?= nl2br(htmlspecialchars($c['Contenido'])) ?>
+
+        <?php if ($idUsuario): ?>
+            <details style="margin-top:6px;">
+                <summary style="cursor:pointer; font-size:0.85em; color:#007BFF;">Responder</summary>
+                <form action="index.php" method="POST" style="margin-top:6px;">
+                    <input type="hidden" name="action"              value="responderComentario">
+                    <input type="hidden" name="id_comentario_padre" value="<?= $c['IdComentario'] ?>">
+                    <input type="hidden" name="id_video"            value="<?= $idVideo ?>">
+                    <textarea name="contenido" rows="2" cols="55" maxlength="1024"
+                              placeholder="Escribe tu respuesta..." required></textarea><br>
+                    <input type="submit" value="Publicar respuesta">
+                </form>
+            </details>
+        <?php endif; ?>
+
+        <?php if (!empty($respuestas)): ?>
+            <div style="margin-left:20px; margin-top:8px;
+                        border-left:2px solid #dee2e6; padding-left:12px;">
+                <?php foreach ($respuestas as $r): ?>
+                    <div style="margin-bottom:8px;">
+                        <strong><?= htmlspecialchars($r['NombreUsuario']) ?></strong>
+                        <small style="color:#666;">
+                            (<?= htmlspecialchars($r['TipoUsuario']) ?>) — <?= htmlspecialchars($r['FechaComentario']) ?>
+                        </small><br>
+                        <?= nl2br(htmlspecialchars($r['Contenido'])) ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 <?php endforeach; ?>
 

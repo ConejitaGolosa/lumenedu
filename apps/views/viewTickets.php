@@ -8,14 +8,21 @@ if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_tipo'] !== 'Suscriptor
 require_once __DIR__ . '/../models/modelTicket.php';
 require_once __DIR__ . '/../models/modelVideo.php';
 require_once __DIR__ . '/../models/modelSolicitudClase.php';
+require_once __DIR__ . '/../models/modelUser.php';
 
 $idUsuario     = (int)$_SESSION['usuario_id'];
 $usados        = Ticket::usadosEsteMes($idUsuario);
 $disponibles   = 3 - $usados;
 $misTickets    = Ticket::getMisTickets($idUsuario);
 $desbloqueados = Ticket::profesoresDesbloqueados($idUsuario);
-$profesores    = Video::getTodosProfesores();
+$profesores    = Video::getTodosProfesores();   // incluye DiasAntMinimo
 $solicitudes   = SolicitudClase::getDeEstudiante($idUsuario);
+
+// Mapa idProfesor → DiasAntMinimo para los profesores con ticket (se usa en el JS)
+$diasPorProfesor = [];
+foreach ($misTickets as $t) {
+    $diasPorProfesor[$t['IdProfesor']] = Usuario::getMinDias($t['IdProfesor']);
+}
 
 $etiqEstado = [
     'Pendiente'              => 'Pendiente',
@@ -50,7 +57,9 @@ $etiqEstado = [
             <option value="">— Elige un profesor —</option>
             <?php foreach ($profesores as $p): ?>
                 <?php if (!in_array($p['IdUsuario'], $desbloqueados)): ?>
-                    <option value="<?= $p['IdUsuario'] ?>"><?= htmlspecialchars($p['NombreUsuario']) ?></option>
+                    <option value="<?= $p['IdUsuario'] ?>">
+                        <?= htmlspecialchars($p['NombreUsuario']) ?>
+                    </option>
                 <?php endif; ?>
             <?php endforeach; ?>
         </select><br><br>
@@ -66,16 +75,24 @@ $etiqEstado = [
 <?php if (!empty($desbloqueados)): ?>
     <h3>Solicitar clase virtual</h3>
     <p>Solo puedes solicitar clase a los profesores con los que tienes ticket este mes.</p>
-    <form action="index.php" method="POST">
+
+    <form action="index.php" method="POST" id="form-solicitud">
         <input type="hidden" name="action" value="solicitarClase">
 
         <label for="prof_clase">Profesor:</label><br>
         <select id="prof_clase" name="id_profesor" required>
-            <option value="">— Elige un profesor —</option>
+            <option value="" data-dias="1">— Elige un profesor —</option>
             <?php foreach ($misTickets as $t): ?>
-                <option value="<?= $t['IdProfesor'] ?>"><?= htmlspecialchars($t['Profesor']) ?></option>
+                <?php $dias = $diasPorProfesor[$t['IdProfesor']] ?? 1; ?>
+                <option value="<?= $t['IdProfesor'] ?>" data-dias="<?= $dias ?>">
+                    <?= htmlspecialchars($t['Profesor']) ?>
+                    (requiere <?= $dias ?> día<?= $dias !== 1 ? 's' : '' ?> de anticipación)
+                </option>
             <?php endforeach; ?>
         </select><br><br>
+
+        <p id="aviso_dias" style="color:#856404; background:#fff3cd;
+           padding:6px 10px; border-radius:4px; display:none;"></p>
 
         <label for="fecha_propuesta">Fecha y hora propuesta:</label><br>
         <input type="datetime-local" id="fecha_propuesta" name="fecha_propuesta"
@@ -83,6 +100,39 @@ $etiqEstado = [
 
         <input type="submit" value="Enviar solicitud">
     </form>
+
+    <script>
+    (function () {
+        const sel  = document.getElementById('prof_clase');
+        const inp  = document.getElementById('fecha_propuesta');
+        const aviso = document.getElementById('aviso_dias');
+
+        function actualizarMin() {
+            const opt  = sel.options[sel.selectedIndex];
+            const dias = parseInt(opt.dataset.dias || 1, 10);
+
+            if (!opt.value) {
+                inp.min = new Date().toISOString().slice(0, 16);
+                aviso.style.display = 'none';
+                return;
+            }
+
+            const min = new Date();
+            min.setDate(min.getDate() + dias);
+            inp.min = min.toISOString().slice(0, 16);
+
+            aviso.textContent = 'Este profesor requiere al menos ' + dias
+                + ' día' + (dias !== 1 ? 's' : '') + ' de anticipación. '
+                + 'Fecha mínima: ' + min.toLocaleDateString('es-ES',
+                  { day: '2-digit', month: '2-digit', year: 'numeric' }) + '.';
+            aviso.style.display = 'block';
+
+            if (inp.value && new Date(inp.value) < min) { inp.value = ''; }
+        }
+
+        sel.addEventListener('change', actualizarMin);
+    })();
+    </script>
 <?php endif; ?>
 
 <hr>

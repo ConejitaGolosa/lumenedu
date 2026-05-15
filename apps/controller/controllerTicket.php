@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) { session_start(); }
 require_once __DIR__ . '/../models/modelTicket.php';
 require_once __DIR__ . '/../models/modelSolicitudClase.php';
 require_once __DIR__ . '/../models/modelNotificacion.php';
+require_once __DIR__ . '/../models/modelUser.php';
 
 if (!isset($_SESSION['usuario_id'])) {
     $_SESSION['error'] = 'Debes iniciar sesión.';
@@ -73,10 +74,27 @@ switch ($action) {
             exit;
         }
 
+        // Valida que la fecha no sea en el pasado
+        if (strtotime($fechaPropuesta) <= time()) {
+            $_SESSION['error'] = 'La fecha propuesta no puede ser en el pasado o la hora actual.';
+            header('Location: index.php?page=viewTickets');
+            exit;
+        }
+
         // Valida que el alumno tenga ticket con ese profesor este mes
         $desbloqueados = Ticket::profesoresDesbloqueados($idUsuario);
         if (!in_array($idProfesor, $desbloqueados)) {
             $_SESSION['error'] = 'Necesitas un ticket con ese profesor para solicitar una clase.';
+            header('Location: index.php?page=viewTickets');
+            exit;
+        }
+
+        // Valida tiempo mínimo de anticipación del profesor
+        $diasMin    = Usuario::getMinDias($idProfesor);
+        $fechaMin   = date('Y-m-d H:i:s', strtotime("+{$diasMin} days"));
+        if (strtotime($fechaPropuesta) < strtotime($fechaMin)) {
+            $_SESSION['error'] = 'Este profesor requiere al menos ' . $diasMin . ' día(s) de anticipación. '
+                               . 'La fecha mínima disponible es el ' . date('d/m/Y', strtotime($fechaMin)) . '.';
             header('Location: index.php?page=viewTickets');
             exit;
         }

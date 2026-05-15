@@ -1,14 +1,25 @@
 <?php
-// Vista: panel del administrador para revisar videos pendientes
-if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_tipo'] !== 'Administrador') {
+// Vista: panel de moderación (Administrador + Moderador)
+$tipoUsuario = $_SESSION['usuario_tipo'] ?? '';
+$esAdmin     = $tipoUsuario === 'Administrador';
+$esMod       = $tipoUsuario === 'Moderador';
+
+if (!isset($_SESSION['usuario_id']) || (!$esAdmin && !$esMod)) {
     echo '<p>Acceso restringido.</p>';
     return;
 }
 
 require_once __DIR__ . '/../models/modelVideo.php';
+require_once __DIR__ . '/../models/modelUser.php';
+
 $pendientes = Video::getPendientes();
+$usuarios   = $esAdmin ? Usuario::getUsuariosActivos() : [];
 ?>
-<h2>Panel de Administración — Videos pendientes</h2>
+
+<h2>Panel de <?= $esAdmin ? 'Administración' : 'Moderación' ?></h2>
+
+<!-- ── VIDEOS PENDIENTES (Admin + Moderador) ────────────────── -->
+<h3>Videos pendientes de revisión</h3>
 
 <?php if (empty($pendientes)): ?>
     <p>No hay videos pendientes de revisión.</p>
@@ -20,16 +31,13 @@ $pendientes = Video::getPendientes();
             <strong>Video #<?= $v['IdVideo'] ?></strong> —
             Profesor: <strong><?= htmlspecialchars($v['Profesor']) ?></strong> —
             Subido: <?= htmlspecialchars($v['FechaSubida']) ?>
-
             <br><br>
 
-            <!-- Reproductor del video para que el admin pueda verlo -->
             <video controls width="480" style="display:block; margin-bottom:10px;">
                 <source src="<?= htmlspecialchars($v['ArchivoVideo']) ?>" type="video/mp4">
                 Tu navegador no soporta el reproductor de video.
             </video>
 
-            <!-- Formulario de revisión -->
             <form action="index.php" method="POST">
                 <input type="hidden" name="action"   value="revisarVideo">
                 <input type="hidden" name="id_video" value="<?= $v['IdVideo'] ?>">
@@ -51,4 +59,86 @@ $pendientes = Video::getPendientes();
             </form>
         </div>
     <?php endforeach; ?>
+<?php endif; ?>
+
+<?php if ($esAdmin): ?>
+    <hr>
+
+    <!-- ── GESTIÓN DE ROLES ─────────────────────────────────── -->
+    <h3>Gestión de roles</h3>
+    <p>Asigna o revoca el rol de Moderador (u otros roles) a cualquier usuario.</p>
+
+    <?php if (!empty($usuarios)): ?>
+        <form action="index.php" method="POST">
+            <input type="hidden" name="action" value="asignarModerador">
+
+            <label for="u_rol">Usuario:</label><br>
+            <select id="u_rol" name="id_usuario" required>
+                <option value="">— Selecciona un usuario —</option>
+                <?php foreach ($usuarios as $u): ?>
+                    <option value="<?= $u['IdUsuario'] ?>">
+                        <?= htmlspecialchars($u['NombreUsuario']) ?>
+                        (<?= htmlspecialchars($u['TipoUsuario']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select><br><br>
+
+            <label for="nuevo_rol">Nuevo rol:</label><br>
+            <select id="nuevo_rol" name="nuevo_rol" required>
+                <option value="Moderador">Moderador</option>
+                <option value="Creador">Creador (profesor)</option>
+                <option value="Suscriptor">Suscriptor (alumno)</option>
+                <option value="EstudianteGratis">Estudiante Gratis</option>
+            </select><br><br>
+
+            <input type="submit" value="Actualizar rol">
+        </form>
+    <?php else: ?>
+        <p>No hay usuarios disponibles.</p>
+    <?php endif; ?>
+
+    <hr>
+
+    <!-- ── ELIMINAR VIDEO ───────────────────────────────────── -->
+    <h3>Eliminar video</h3>
+    <p>Oculta un video que viole las políticas de LumenEdu (el profesor no podrá recuperarlo).</p>
+
+    <form action="index.php" method="POST"
+          onsubmit="return confirm('¿Eliminar el video #' + document.getElementById('vid_eliminar').value + '? Esta acción es permanente.');">
+        <input type="hidden" name="action" value="eliminarVideo">
+        <label for="vid_eliminar">ID del video:</label><br>
+        <input type="number" id="vid_eliminar" name="id_video" min="1" required
+               style="width:100px;"><br><br>
+        <input type="submit" value="Eliminar video"
+               style="background:#dc3545; color:#fff; border:none;
+                      padding:6px 14px; cursor:pointer; border-radius:4px;">
+    </form>
+
+    <hr>
+
+    <!-- ── SUSPENDER CANAL ──────────────────────────────────── -->
+    <h3>Suspender canal (usuario)</h3>
+    <p>Suspende una cuenta y oculta todo su contenido. El usuario no podrá iniciar sesión.</p>
+
+    <?php if (!empty($usuarios)): ?>
+        <form action="index.php" method="POST"
+              onsubmit="return confirm('¿Suspender este canal? El usuario perderá acceso y se ocultará su contenido.');">
+            <input type="hidden" name="action" value="eliminarCanal">
+
+            <label for="canal_suspender">Usuario a suspender:</label><br>
+            <select id="canal_suspender" name="id_usuario" required>
+                <option value="">— Selecciona un usuario —</option>
+                <?php foreach ($usuarios as $u): ?>
+                    <option value="<?= $u['IdUsuario'] ?>">
+                        <?= htmlspecialchars($u['NombreUsuario']) ?>
+                        (<?= htmlspecialchars($u['TipoUsuario']) ?>)
+                    </option>
+                <?php endforeach; ?>
+            </select><br><br>
+
+            <input type="submit" value="Suspender canal"
+                   style="background:#dc3545; color:#fff; border:none;
+                          padding:6px 14px; cursor:pointer; border-radius:4px;">
+        </form>
+    <?php endif; ?>
 <?php endif; ?>

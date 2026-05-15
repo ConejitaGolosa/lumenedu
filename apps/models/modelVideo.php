@@ -155,22 +155,6 @@ class Video {
         return $videos;
     }
 
-    // Verifica si un usuario puede ver un video dado su tipo y tickets.
-    public static function puedeVer($video, $tipoUsuario, $idUsuario, $ticketedProfs = []) {
-        if (!$video || $video['Estado'] !== 'Publicado') {
-            // El admin y el propio profesor pueden ver cualquier estado
-            return ($tipoUsuario === 'Administrador' || (int)$video['IdProfesor'] === (int)$idUsuario);
-        }
-        if ($video['Privacidad'] === 'Publico')       return true;
-        if ($tipoUsuario === 'Administrador')          return true;
-        if ((int)$video['IdProfesor'] === (int)$idUsuario) return true; // propio video
-        if ($video['Privacidad'] === 'Privado')        return false;
-        // Privacidad = Suscriptores
-        if ($tipoUsuario === 'Suscriptor') return in_array((int)$video['IdProfesor'], $ticketedProfs);
-        if ($tipoUsuario === 'Creador')    return true; // profesores ven contenido de colegas
-        return false;
-    }
-
     // Lista de todos los profesores con al menos un video publicado (para tickets).
     public static function getProfesoresConVideos() {
         $db   = new Conexion();
@@ -189,17 +173,92 @@ class Video {
         return $profs;
     }
 
-    // Lista de todos los profesores (para solicitar clase aunque no tengan videos aún).
+    // Lista de todos los profesores activos con su tiempo mínimo de anticipación.
     public static function getTodosProfesores() {
         $db   = new Conexion();
         $conn = $db->getConexion();
 
-        $query = "SELECT IdUsuario, NombreUsuario FROM Usuarios WHERE TipoUsuario='Creador' AND EstadoCuenta='Activo' ORDER BY NombreUsuario";
-        $stmt  = $conn->prepare($query);
+        $stmt = $conn->prepare(
+            "SELECT IdUsuario, NombreUsuario, DiasAntMinimo
+             FROM Usuarios
+             WHERE TipoUsuario = 'Creador' AND EstadoCuenta = 'Activo'
+             ORDER BY NombreUsuario"
+        );
         $stmt->execute();
         $profs = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         $db->cerrarConexion();
         return $profs;
+    }
+
+    // Marca un video como eliminado (baja lógica). Retorna la ruta del archivo o false.
+    public static function eliminarVideo($idVideo) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmtGet = $conn->prepare("SELECT ArchivoVideo FROM Video WHERE IdVideo = ? AND Estado != 'Eliminado'");
+        $stmtGet->bind_param("i", $idVideo);
+        $stmtGet->execute();
+        $archivo = null;
+        $stmtGet->bind_result($archivo);
+        $found = $stmtGet->fetch();
+        $stmtGet->close();
+
+        if (!$found) {
+            $db->cerrarConexion();
+            return false;
+        }
+
+        $stmt = $conn->prepare("UPDATE Video SET Estado = 'Eliminado' WHERE IdVideo = ?");
+        $stmt->bind_param("i", $idVideo);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok ? $archivo : false;
+    }
+
+    // Suspende la cuenta de un usuario y marca todos sus videos como eliminados.
+    public static function eliminarCanal($idProfesor) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmtUser = $conn->prepare(
+            "UPDATE Usuarios SET EstadoCuenta = 'Suspendido'
+             WHERE IdUsuario = ? AND TipoUsuario != 'Administrador'"
+        );
+        $stmtUser->bind_param("i", $idProfesor);
+        $stmtUser->execute();
+        $ok = $stmtUser->affected_rows > 0;
+        $stmtUser->close();
+
+        if ($ok) {
+            $stmtVid = $conn->prepare("UPDATE Video SET Estado = 'Eliminado' WHERE IdProfesor = ?");
+            $stmtVid->bind_param("i", $idProfesor);
+            $stmtVid->execute();
+            $stmtVid->close();
+        }
+
+        $db->cerrarConexion();
+        return $ok;
+    }
+
+    // Verifica si un usuario puede ver un video dado su tipo y tickets.
+    // Reemplaza la versión anterior para incluir al Moderador.
+    public static function puedeVer($video, $tipoUsuario, $idUsuario, $ticketedProfs = []) {
+        if (!$video || $video['Estado'] === 'Eliminado') { return false; }
+        if ($video['Estado'] !== 'Publicado') {
+            return ($tipoUsuario === 'Administrador'
+                 || $tipoUsuario === 'Moderador'
+                 || (int)$video['IdProfesor'] === (int)$idUsuario);
+        }
+        if ($video['Privacidad'] === 'Publico')                    return true;
+        if ($tipoUsuario === 'Administrador')                       return true;
+        if ($tipoUsuario === 'Moderador')                           return true;
+        if ((int)$video['IdProfesor'] === (int)$idUsuario)          return true;
+        if ($video['Privacidad'] === 'Privado')                     return false;
+        if ($tipoUsuario === 'Suscriptor') return in_array((int)$video['IdProfesor'], $ticketedProfs);
+        if ($tipoUsuario === 'Creador')    return true;
+        return false;
     }
 }
