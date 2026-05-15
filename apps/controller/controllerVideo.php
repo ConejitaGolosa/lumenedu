@@ -146,6 +146,55 @@ switch ($action) {
         header('Location: index.php?page=viewVideo&id=' . $idVideo);
         exit;
 
+    // ── CAMBIAR PRIVACIDAD ───────────────────────────────────
+    case 'cambiarPrivacidad':
+        if ($tipoUsuario !== 'Creador') {
+            $_SESSION['error'] = 'Acción no permitida.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        $idVideo    = (int)($_POST['id_video']   ?? 0);
+        $privacidad = $_POST['privacidad']         ?? '';
+
+        if (!$idVideo || !in_array($privacidad, ['Publico', 'Suscriptores', 'Privado'])) {
+            $_SESSION['error'] = 'Datos inválidos.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        if (Video::cambiarPrivacidad($idVideo, $idUsuario, $privacidad)) {
+            $_SESSION['mensaje'] = 'Privacidad actualizada correctamente.';
+        } else {
+            $_SESSION['error'] = 'No se pudo actualizar. Solo puedes editar tus videos publicados.';
+        }
+        header('Location: index.php?page=viewMisVideos');
+        exit;
+
+    // ── ELIMINAR MI VIDEO ────────────────────────────────────
+    case 'eliminarMiVideo':
+        if ($tipoUsuario !== 'Creador') {
+            $_SESSION['error'] = 'Acción no permitida.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        $idVideo = (int)($_POST['id_video'] ?? 0);
+
+        if (!$idVideo) {
+            $_SESSION['error'] = 'ID de video inválido.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        if (Video::eliminarMiVideo($idVideo, $idUsuario)) {
+            $_SESSION['mensaje'] = 'Video eliminado.';
+        } else {
+            $_SESSION['error'] = 'No se pudo eliminar. El video no existe o no te pertenece.';
+        }
+        header('Location: index.php?page=viewMisVideos');
+        exit;
+
     // ── RESPONDER COMENTARIO ─────────────────────────────────
     // Responde a un comentario en video o foro; notifica al autor del comentario padre.
     case 'responderComentario':
@@ -179,7 +228,7 @@ switch ($action) {
                 $preview = mb_substr($contenido, 0, 80) . (mb_strlen($contenido) > 80 ? '…' : '');
                 $msg     = htmlspecialchars($_SESSION['usuario_nombre'])
                          . ' respondió a tu comentario: "' . $preview . '"';
-                $ref     = $idForo ?? $idVideo;
+                $ref     = $idPadre; // guardamos el IdComentario padre para enlazar directamente
                 require_once __DIR__ . '/../models/modelNotificacion.php';
                 Notificacion::crear($idAutorPadre, 'RespuestaComentario', $msg, $ref);
             }

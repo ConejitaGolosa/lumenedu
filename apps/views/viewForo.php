@@ -45,7 +45,8 @@ $comentarios = Comentario::getByForo($idForo);
 
 <?php foreach ($comentarios as $c): ?>
     <?php $respuestas = Comentario::getRespuestas($c['IdComentario']); ?>
-    <div style="border-left:3px solid #007BFF; padding:6px 12px; margin-bottom:12px;">
+    <div id="comentario-<?= $c['IdComentario'] ?>"
+         style="border-left:3px solid #007BFF; padding:6px 12px; margin-bottom:12px;">
         <strong><?= htmlspecialchars($c['NombreUsuario']) ?></strong>
         <small style="color:#666;">
             (<?= htmlspecialchars($c['TipoUsuario']) ?>) — <?= htmlspecialchars($c['FechaComentario']) ?>

@@ -91,21 +91,9 @@ class Video {
                       ORDER BY v.FechaPublicacion DESC";
             $stmt = $conn->prepare($query);
 
-        } elseif ($tipoUsuario === 'Suscriptor' && !empty($ticketedProfs)) {
-            // Públicos + Suscriptores de profesores ticketeados
-            $ph   = implode(',', array_fill(0, count($ticketedProfs), '?'));
-            $query = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad,
-                             v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
-                      FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
-                      WHERE v.Estado = 'Publicado'
-                        AND (v.Privacidad = 'Publico'
-                             OR (v.Privacidad = 'Suscriptores' AND v.IdProfesor IN ($ph)))
-                      ORDER BY v.FechaPublicacion DESC";
-            $stmt  = $conn->prepare($query);
-            $stmt->bind_param(str_repeat('i', count($ticketedProfs)), ...$ticketedProfs);
-
         } else {
-            // Creador, Administrador, Suscriptor sin tickets: públicos + suscriptores (no privados)
+            // Suscriptor, Creador, Administrador, Moderador: ven públicos y de suscriptores.
+            // El acceso real se controla en puedeVer() al abrir el video.
             $query = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad,
                              v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
                       FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
@@ -189,6 +177,40 @@ class Video {
         $stmt->close();
         $db->cerrarConexion();
         return $profs;
+    }
+
+    // El profesor cambia la privacidad de uno de sus videos publicados.
+    public static function cambiarPrivacidad($idVideo, $idProfesor, $privacidad) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "UPDATE Video SET Privacidad = ?
+             WHERE IdVideo = ? AND IdProfesor = ? AND Estado = 'Publicado'"
+        );
+        $stmt->bind_param("sii", $privacidad, $idVideo, $idProfesor);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
+    // El profesor elimina (baja lógica) uno de sus propios videos.
+    public static function eliminarMiVideo($idVideo, $idProfesor) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare(
+            "UPDATE Video SET Estado = 'Eliminado'
+             WHERE IdVideo = ? AND IdProfesor = ?"
+        );
+        $stmt->bind_param("ii", $idVideo, $idProfesor);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
     }
 
     // Marca un video como eliminado (baja lógica). Retorna la ruta del archivo o false.

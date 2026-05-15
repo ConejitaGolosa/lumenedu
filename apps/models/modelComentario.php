@@ -96,6 +96,20 @@ class Comentario {
         return $respuestas;
     }
 
+    // Devuelve IdVideo e IdForo del comentario (para construir el enlace desde notificaciones).
+    public static function getContexto($idComentario) {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        $stmt = $conn->prepare("SELECT IdVideo, IdForo FROM Comentario WHERE IdComentario = ?");
+        $stmt->bind_param("i", $idComentario);
+        $stmt->execute();
+        $row = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        $db->cerrarConexion();
+        return $row; // ['IdVideo' => X|null, 'IdForo' => X|null]
+    }
+
     // Devuelve el IdUsuario autor de un comentario (para notificarle cuando le responden).
     public static function getAutor($idComentario) {
         $db   = new Conexion();
