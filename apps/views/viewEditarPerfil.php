@@ -2,11 +2,6 @@
 // Vista: editar el propio perfil
 require_once __DIR__ . '/../models/modelPerfil.php';
 
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: index.php?page=viewLogin');
-    exit;
-}
-
 $idUsuario = (int)$_SESSION['usuario_id'];
 $perfil    = Perfil::getByUsuario($idUsuario);
 $foto      = $perfil['FotoPerfil'] ? htmlspecialchars($perfil['FotoPerfil']) : null;

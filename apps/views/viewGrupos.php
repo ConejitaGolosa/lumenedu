@@ -3,11 +3,6 @@
 require_once __DIR__ . '/../models/modelGrupo.php';
 require_once __DIR__ . '/../models/modelPerfil.php';
 
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: index.php?page=viewLogin');
-    exit;
-}
-
 $idUsuario = (int)$_SESSION['usuario_id'];
 $grupos    = Grupo::getMisGrupos($idUsuario);
 $usuarios  = Perfil::getUsuariosActivos($idUsuario);

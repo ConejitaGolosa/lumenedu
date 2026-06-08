@@ -90,6 +90,18 @@ if (isset($_SESSION['usuario_id']) && in_array($page, ['viewLogin', 'viewRegistr
     exit;
 }
 
+// Redirige a login si el usuario no tiene sesión e intenta entrar a páginas protegidas
+$paginasProtegidas = [
+    'viewEditarPerfil', 'viewMensajes', 'viewGrupos', 'viewGrupo',
+    'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
+    'viewTickets', 'viewSolicitudes', 'viewConfigProfesor',
+    'viewAdminPanel', 'viewNotificaciones', 'viewSuscribirse',
+];
+if (!isset($_SESSION['usuario_id']) && in_array($page, $paginasProtegidas)) {
+    header('Location: index.php?page=viewLogin');
+    exit;
+}
+
 // Contadores de badges del nav
 $notifCount = 0;
 $mensajesCount = 0;

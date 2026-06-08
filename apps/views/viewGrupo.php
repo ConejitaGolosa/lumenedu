@@ -3,11 +3,6 @@
 require_once __DIR__ . '/../models/modelGrupo.php';
 require_once __DIR__ . '/../models/modelPerfil.php';
 
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: index.php?page=viewLogin');
-    exit;
-}
-
 $idUsuario = (int)$_SESSION['usuario_id'];
 $idGrupo   = (int)($_GET['id'] ?? 0);
 
@@ -63,9 +58,7 @@ $noMiembros    = array_filter($todosUsuarios, fn($u) => !in_array((int)$u['IdUsu
             <?php endif; ?>
         </div>
 
-        <form action="index.php" method="POST" class="chat-form">
-            <input type="hidden" name="action"   value="enviarMensajeGrupo">
-            <input type="hidden" name="id_grupo" value="<?= $idGrupo ?>">
+        <form class="chat-form" id="chatSendForm">
             <textarea name="contenido" rows="2" maxlength="1024"
                       placeholder="Escribe un mensaje en el grupo…" required></textarea>
             <button type="submit" class="btn btn-primary">Enviar</button>
@@ -163,5 +156,33 @@ $noMiembros    = array_filter($todosUsuarios, fn($u) => !in_array((int)$u['IdUsu
     }
 
     setInterval(poll, 3000);
+
+    // Envío AJAX: sin recargar la página
+    const sendForm = document.getElementById('chatSendForm');
+    if (sendForm) {
+        sendForm.addEventListener('submit', e => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const ta  = sendForm.querySelector('textarea');
+            const txt = ta.value.trim();
+            if (!txt) return;
+            const btn = sendForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+
+            const fd = new FormData();
+            fd.append('action',    'enviarMensajeGrupo');
+            fd.append('id_grupo',  idGrupo);
+            fd.append('contenido', txt);
+
+            fetch('index.php', { method: 'POST', body: fd })
+                .then(() => {
+                    ta.value     = '';
+                    btn.disabled = false;
+                    poll();
+                    ta.focus();
+                })
+                .catch(() => { btn.disabled = false; });
+        });
+    }
 })();
 </script>

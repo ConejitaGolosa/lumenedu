@@ -3,11 +3,6 @@
 require_once __DIR__ . '/../models/modelMensaje.php';
 require_once __DIR__ . '/../models/modelPerfil.php';
 
-if (!isset($_SESSION['usuario_id'])) {
-    header('Location: index.php?page=viewLogin');
-    exit;
-}
-
 $idUsuario      = (int)$_SESSION['usuario_id'];
 $idConversacion = (int)($_GET['usuario'] ?? 0);
 
@@ -101,9 +96,7 @@ $todosUsuarios  = $idConversacion ? [] : Perfil::getUsuariosActivos($idUsuario);
                 <?php endif; ?>
             </div>
 
-            <form action="index.php" method="POST" class="chat-form">
-                <input type="hidden" name="action"      value="enviarMensaje">
-                <input type="hidden" name="id_receptor" value="<?= $idConversacion ?>">
+            <form class="chat-form" id="chatSendForm">
                 <textarea name="contenido" rows="2" maxlength="1024"
                           placeholder="Escribe un mensaje…" required></textarea>
                 <button type="submit" class="btn btn-primary">Enviar</button>
@@ -184,5 +177,33 @@ $todosUsuarios  = $idConversacion ? [] : Perfil::getUsuariosActivos($idUsuario);
     }
 
     setInterval(poll, 3000);
+
+    // Envío AJAX: el mensaje aparece al instante sin recargar la página
+    const sendForm = document.getElementById('chatSendForm');
+    if (sendForm) {
+        sendForm.addEventListener('submit', e => {
+            e.preventDefault();
+            e.stopImmediatePropagation(); // impide que main.js desactive el botón
+            const ta  = sendForm.querySelector('textarea');
+            const txt = ta.value.trim();
+            if (!txt) return;
+            const btn = sendForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
+
+            const fd = new FormData();
+            fd.append('action',      'enviarMensaje');
+            fd.append('id_receptor', idOtro);
+            fd.append('contenido',   txt);
+
+            fetch('index.php', { method: 'POST', body: fd })
+                .then(() => {
+                    ta.value  = '';
+                    btn.disabled = false;
+                    poll(); // fetch new messages immediately
+                    ta.focus();
+                })
+                .catch(() => { btn.disabled = false; });
+        });
+    }
 })();
 </script>
