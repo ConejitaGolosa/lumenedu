@@ -1954,6 +1954,31 @@ details.panel .panel-body {
   margin-top: .5rem;
 }
 
+/* ── BAN LIST ─────────────────────────────────────────────── */
+.ban-list {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  max-width: 640px;
+}
+.ban-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.ban-info {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  flex-wrap: wrap;
+  font-size: .9rem;
+}
+
 @media (max-width: 600px) {
   .search-bar { gap: .4rem; }
   .search-bar input[type="text"],

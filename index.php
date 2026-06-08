@@ -7,6 +7,20 @@
 
 session_start();
 
+// ── BAN CHECK ────────────────────────────────────────────────
+// Si el usuario baneado recarga cualquier página se le cierra la sesión al instante.
+if (isset($_SESSION['usuario_id'])) {
+    require_once 'apps/models/modelUser.php';
+    if (Usuario::isBaneado((int)$_SESSION['usuario_id'])) {
+        $_SESSION = [];
+        session_destroy();
+        session_start();
+        $_SESSION['error'] = 'Tu cuenta ha sido baneada. Contacta al administrador si crees que es un error.';
+        header('Location: index.php?page=viewLogin');
+        exit;
+    }
+}
+
 // ── DESPACHO DE ACCIONES ─────────────────────────────────────
 // Mapeo acción → archivo de controlador
 $controllerMap = [
@@ -23,6 +37,8 @@ $controllerMap = [
     'asignarModerador'       => 'controllerAdmin',
     'eliminarVideo'          => 'controllerAdmin',
     'eliminarCanal'          => 'controllerAdmin',
+    'banearUsuario'          => 'controllerAdmin',
+    'desbanearUsuario'       => 'controllerAdmin',
     'usarTicket'             => 'controllerTicket',
     'solicitarClase'         => 'controllerTicket',
     'responderSolicitud'     => 'controllerTicket',

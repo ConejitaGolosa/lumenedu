@@ -177,6 +177,70 @@ class Usuario {
         return $ok;
     }
 
+    // ── BANEO ────────────────────────────────────────────────
+    // Comprueba si un usuario tiene EstadoCuenta = 'Baneado'.
+    public static function isBaneado(int $id): bool {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare("SELECT EstadoCuenta FROM Usuarios WHERE IdUsuario = ? LIMIT 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $estado = '';
+        $stmt->bind_result($estado);
+        $stmt->fetch();
+        $stmt->close();
+        $db->cerrarConexion();
+        return $estado === 'Baneado';
+    }
+
+    // Banea a un usuario no-administrador.
+    public static function banear(int $id): bool {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare(
+            "UPDATE Usuarios SET EstadoCuenta = 'Baneado'
+             WHERE IdUsuario = ? AND TipoUsuario != 'Administrador'"
+        );
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
+    // Desbanea a un usuario (vuelve a 'Activo').
+    public static function desbanear(int $id): bool {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare(
+            "UPDATE Usuarios SET EstadoCuenta = 'Activo'
+             WHERE IdUsuario = ? AND EstadoCuenta = 'Baneado'"
+        );
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $ok = $stmt->affected_rows > 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
+    // Lista de usuarios baneados.
+    public static function getBaneados(): array {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare(
+            "SELECT IdUsuario, NombreUsuario, TipoUsuario, Correo
+             FROM Usuarios WHERE EstadoCuenta = 'Baneado'
+             ORDER BY NombreUsuario"
+        );
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
     // ── LOGIN ────────────────────────────────────────────────
     // Método estático: busca un usuario por NombreUsuario o Correo
     // y verifica la contraseña con password_verify.

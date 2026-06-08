@@ -183,6 +183,57 @@ switch ($action) {
         header('Location: index.php?page=viewAdminPanel');
         exit;
 
+    // ── BANEAR USUARIO ───────────────────────────────────────
+    case 'banearUsuario':
+        if (!$esAdmin) {
+            $_SESSION['error'] = 'Solo el administrador puede banear usuarios.';
+            header('Location: index.php?page=viewAdminPanel');
+            exit;
+        }
+
+        $idTarget = (int)($_POST['id_usuario'] ?? 0);
+        if (!$idTarget) {
+            $_SESSION['error'] = 'Selecciona un usuario.';
+            header('Location: index.php?page=viewAdminPanel');
+            exit;
+        }
+        if ($idTarget === $idUsuario) {
+            $_SESSION['error'] = 'No puedes banearte a ti mismo.';
+            header('Location: index.php?page=viewAdminPanel');
+            exit;
+        }
+
+        if (Usuario::banear($idTarget)) {
+            $_SESSION['mensaje'] = 'Usuario baneado. Su sesión se cerrará en su próxima petición.';
+        } else {
+            $_SESSION['error'] = 'No se pudo banear al usuario (puede que sea administrador o no exista).';
+        }
+        header('Location: index.php?page=viewAdminPanel');
+        exit;
+
+    // ── DESBANEAR USUARIO ────────────────────────────────────
+    case 'desbanearUsuario':
+        if (!$esAdmin) {
+            $_SESSION['error'] = 'Solo el administrador puede desbanear usuarios.';
+            header('Location: index.php?page=viewAdminPanel');
+            exit;
+        }
+
+        $idTarget = (int)($_POST['id_usuario'] ?? 0);
+        if (!$idTarget) {
+            $_SESSION['error'] = 'ID de usuario inválido.';
+            header('Location: index.php?page=viewAdminPanel');
+            exit;
+        }
+
+        if (Usuario::desbanear($idTarget)) {
+            $_SESSION['mensaje'] = 'Usuario desbaneado. Ya puede volver a iniciar sesión.';
+        } else {
+            $_SESSION['error'] = 'No se pudo desbanear al usuario.';
+        }
+        header('Location: index.php?page=viewAdminPanel');
+        exit;
+
     default:
         header('Location: index.php?page=viewAdminPanel');
         exit;

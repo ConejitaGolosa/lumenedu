@@ -14,6 +14,7 @@ require_once __DIR__ . '/../models/modelUser.php';
 
 $pendientes = Video::getPendientes();
 $usuarios   = $esAdmin ? Usuario::getUsuariosActivos() : [];
+$baneados   = $esAdmin ? Usuario::getBaneados()         : [];
 ?>
 
 <div class="page-header">
@@ -121,6 +122,70 @@ $usuarios   = $esAdmin ? Usuario::getUsuariosActivos() : [];
             </div>
         <?php else: ?>
             <p>No hay usuarios disponibles.</p>
+        <?php endif; ?>
+    </div>
+
+    <!-- ── BANEAR USUARIO ───────────────────────────────────── -->
+    <div class="section">
+        <h3 class="section-title">Banear usuario</h3>
+        <p>El usuario baneado no podrá iniciar sesión y su sesión activa se cerrará en cuanto recargue la página.</p>
+
+        <?php if (!empty($usuarios)): ?>
+            <div class="card" style="max-width:480px;">
+                <form action="index.php" method="POST"
+                      onsubmit="return confirm('¿Banear a este usuario? Perderá el acceso de inmediato.');">
+                    <input type="hidden" name="action" value="banearUsuario">
+                    <div class="form-group">
+                        <label for="ban_usuario">Usuario</label>
+                        <select id="ban_usuario" name="id_usuario" required>
+                            <option value="">— Selecciona un usuario —</option>
+                            <?php foreach ($usuarios as $u): ?>
+                                <option value="<?= $u['IdUsuario'] ?>">
+                                    <?= htmlspecialchars($u['NombreUsuario']) ?>
+                                    (<?= htmlspecialchars($u['TipoUsuario']) ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-danger">Banear usuario</button>
+                </form>
+            </div>
+        <?php else: ?>
+            <p class="text-muted">No hay usuarios activos para banear.</p>
+        <?php endif; ?>
+    </div>
+
+    <!-- ── USUARIOS BANEADOS ─────────────────────────────────── -->
+    <div class="section">
+        <h3 class="section-title">
+            Usuarios baneados
+            <?php if (!empty($baneados)): ?>
+                <span class="badge badge-error" style="margin-left:.5rem;"><?= count($baneados) ?></span>
+            <?php endif; ?>
+        </h3>
+
+        <?php if (empty($baneados)): ?>
+            <div class="empty-state" style="padding:1.5rem 1rem;">
+                <p>No hay usuarios baneados actualmente.</p>
+            </div>
+        <?php else: ?>
+            <div class="ban-list">
+                <?php foreach ($baneados as $b): ?>
+                    <div class="ban-item">
+                        <div class="ban-info">
+                            <strong><?= htmlspecialchars($b['NombreUsuario']) ?></strong>
+                            <span class="text-muted"><?= htmlspecialchars($b['Correo']) ?></span>
+                            <span class="badge badge-muted"><?= htmlspecialchars($b['TipoUsuario']) ?></span>
+                        </div>
+                        <form action="index.php" method="POST"
+                              onsubmit="return confirm('¿Desbanear a <?= htmlspecialchars($b['NombreUsuario'], ENT_QUOTES) ?>?');">
+                            <input type="hidden" name="action"     value="desbanearUsuario">
+                            <input type="hidden" name="id_usuario" value="<?= $b['IdUsuario'] ?>">
+                            <button type="submit" class="btn btn-secondary btn-sm">Quitar baneo</button>
+                        </form>
+                    </div>
+                <?php endforeach; ?>
+            </div>
         <?php endif; ?>
     </div>
 
