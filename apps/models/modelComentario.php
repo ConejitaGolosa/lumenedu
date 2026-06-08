@@ -113,6 +113,61 @@ class Comentario {
         return $row; // ['IdVideo' => X|null, 'IdForo' => X|null]
     }
 
+    // Comentarios y respuestas nuevos desde cierto IdComentario (para polling AJAX).
+    // $tipo: 'video' | 'foro'
+    public static function getDesde(string $tipo, int $idContenido, int $desdeId): array {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        if ($tipo === 'video') {
+            $stmt = $conn->prepare(
+                "SELECT c.IdComentario, c.IdComentarioPadre, c.Contenido, c.FechaComentario,
+                        u.NombreUsuario, u.TipoUsuario, p.FotoPerfil
+                 FROM Comentario c
+                 JOIN Usuarios u ON u.IdUsuario = c.IdUsuario
+                 LEFT JOIN Perfil p ON p.IdPerfil = c.IdUsuario
+                 WHERE c.IdVideo = ? AND c.IdComentario > ?
+                 ORDER BY c.FechaComentario ASC"
+            );
+        } else {
+            $stmt = $conn->prepare(
+                "SELECT c.IdComentario, c.IdComentarioPadre, c.Contenido, c.FechaComentario,
+                        u.NombreUsuario, u.TipoUsuario, p.FotoPerfil
+                 FROM Comentario c
+                 JOIN Usuarios u ON u.IdUsuario = c.IdUsuario
+                 LEFT JOIN Perfil p ON p.IdPerfil = c.IdUsuario
+                 WHERE c.IdForo = ? AND c.IdComentario > ?
+                 ORDER BY c.FechaComentario ASC"
+            );
+        }
+        $stmt->bind_param("ii", $idContenido, $desdeId);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
+    // ID máximo de comentario en un video o foro (para inicializar el cursor de polling).
+    public static function getMaxId(string $tipo, int $idContenido): int {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        if ($tipo === 'video') {
+            $stmt = $conn->prepare("SELECT COALESCE(MAX(IdComentario),0) FROM Comentario WHERE IdVideo = ?");
+        } else {
+            $stmt = $conn->prepare("SELECT COALESCE(MAX(IdComentario),0) FROM Comentario WHERE IdForo = ?");
+        }
+        $stmt->bind_param("i", $idContenido);
+        $stmt->execute();
+        $id = 0;
+        $stmt->bind_result($id);
+        $stmt->fetch();
+        $stmt->close();
+        $db->cerrarConexion();
+        return (int)$id;
+    }
+
     // Devuelve el IdUsuario autor de un comentario (para notificarle cuando le responden).
     public static function getAutor($idComentario) {
         $db   = new Conexion();
