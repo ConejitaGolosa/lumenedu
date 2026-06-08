@@ -89,11 +89,111 @@ CREATE TABLE Mensaje (
 -- VISTAS Y FUNCIONES PARA ROLES Y PERMISOS
 -- ====================================
 
--- Creacion de Usuarios
+--Creacion de Usuarios
 
-CREATE USER 'cliente' IDENTIFIED BY '123';
-CREATE USER 'creador de contenido' IDENTIFIED BY '456';
-CREATE USER 'administrador' IDENTIFIED BY '789';
+-- ====================================
+-- USUARIOS Y PERMISOS PARA MYSQL
+-- ====================================
+ 
+-- 1. CREAR USUARIOS DE BASE DE DATOS (MySQL)
+-- Usuarios con contraseñas seguidas de los permisos específicos
+
+-- Usuario: cliente (acceso limitado)
+CREATE USER IF NOT EXISTS 'cliente'@'localhost' IDENTIFIED BY '123';
+CREATE USER IF NOT EXISTS 'cliente'@'%' IDENTIFIED BY '123';
+
+-- Usuario: creador (acceso intermedio)
+CREATE USER IF NOT EXISTS 'creador'@'localhost' IDENTIFIED BY '456';
+CREATE USER IF NOT EXISTS 'creador'@'%' IDENTIFIED BY '456';
+
+-- Usuario: admins (acceso completo)
+CREATE USER IF NOT EXISTS 'admins'@'localhost' IDENTIFIED BY '789';
+CREATE USER IF NOT EXISTS 'admins'@'%' IDENTIFIED BY '789';
+
+-- ====================================
+-- 2. ASIGNAR PERMISOS SEGÚN ROLES
+-- ====================================
+
+-- PERMISOS PARA CLIENTE (Suscriptor)
+-- Solo puede ver contenido y hacer pagos, con acceso limitado
+GRANT SELECT ON Project.Usuarios TO 'cliente'@'localhost';
+GRANT SELECT ON Project.Perfil TO 'cliente'@'localhost';
+GRANT SELECT ON Project.Contenido TO 'cliente'@'localhost';
+GRANT SELECT ON Project.Roles TO 'cliente'@'localhost';
+GRANT SELECT ON Project.RolePermissions TO 'cliente'@'localhost';
+GRANT SELECT ON Project.UserPermissions TO 'cliente'@'localhost';
+GRANT SELECT, INSERT ON Project.Suscripcion TO 'cliente'@'localhost';
+GRANT SELECT, INSERT ON Project.Pago TO 'cliente'@'localhost';
+GRANT SELECT, INSERT ON Project.Mensaje TO 'cliente'@'localhost';
+GRANT EXECUTE ON FUNCTION Project.HasPermission TO 'cliente'@'localhost';
+
+GRANT SELECT ON Project.Usuarios TO 'cliente'@'%';
+GRANT SELECT ON Project.Perfil TO 'cliente'@'%';
+GRANT SELECT ON Project.Contenido TO 'cliente'@'%';
+GRANT SELECT ON Project.Roles TO 'cliente'@'%';
+GRANT SELECT ON Project.RolePermissions TO 'cliente'@'%';
+GRANT SELECT ON Project.UserPermissions TO 'cliente'@'%';
+GRANT SELECT, INSERT ON Project.Suscripcion TO 'cliente'@'%';
+GRANT SELECT, INSERT ON Project.Pago TO 'cliente'@'%';
+GRANT SELECT, INSERT ON Project.Mensaje TO 'cliente'@'%';
+GRANT EXECUTE ON FUNCTION Project.HasPermission TO 'cliente'@'%';
+
+-- PERMISOS PARA CREADOR
+-- Puede crear contenido, ver usuarios y gestionar sus propias suscripciones
+GRANT SELECT ON Project.Usuarios TO 'creador'@'localhost';
+GRANT SELECT ON Project.Perfil TO 'creador'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON Project.Contenido TO 'creador'@'localhost';
+GRANT SELECT ON Project.Suscripcion TO 'creador'@'localhost';
+GRANT SELECT, INSERT ON Project.Pago TO 'creador'@'localhost';
+GRANT SELECT, INSERT ON Project.Mensaje TO 'creador'@'localhost';
+GRANT SELECT ON Project.Roles TO 'creador'@'localhost';
+GRANT SELECT ON Project.RolePermissions TO 'creador'@'localhost';
+GRANT SELECT ON Project.UserPermissions TO 'creador'@'localhost';
+GRANT EXECUTE ON FUNCTION Project.HasPermission TO 'creador'@'localhost';
+
+GRANT SELECT ON Project.Usuarios TO 'creador'@'%';
+GRANT SELECT ON Project.Perfil TO 'creador'@'%';
+GRANT SELECT, INSERT, UPDATE ON Project.Contenido TO 'creador'@'%';
+GRANT SELECT ON Project.Suscripcion TO 'creador'@'%';
+GRANT SELECT, INSERT ON Project.Pago TO 'creador'@'%';
+GRANT SELECT, INSERT ON Project.Mensaje TO 'creador'@'%';
+GRANT SELECT ON Project.Roles TO 'creador'@'%';
+GRANT SELECT ON Project.RolePermissions TO 'creador'@'%';
+GRANT SELECT ON Project.UserPermissions TO 'creador'@'%';
+GRANT EXECUTE ON FUNCTION Project.HasPermission TO 'creador'@'%';
+
+-- PERMISOS PARA ADMINS (Administrador)
+-- Acceso completo a toda la base de datos
+GRANT ALL PRIVILEGES ON Project.* TO 'admins'@'localhost';
+GRANT ALL PRIVILEGES ON Project.* TO 'admins'@'%';
+-- ====================================
+-- 3. APLICAR CAMBIOS Y RECARGAR PERMISOS
+-- ====================================
+
+FLUSH PRIVILEGES;
+
+-- ====================================
+-- 4. VERIFICAR USUARIOS Y PERMISOS CREADOS
+-- ====================================
+
+-- Mostrar usuarios creados
+SELECT User, Host FROM mysql.user WHERE User IN ('cliente', 'creador', 'admins');
+
+-- Mostrar permisos de cada usuario (mysql.user)
+SELECT User, Host, 
+       Select_priv, 
+       Insert_priv, 
+       Update_priv, 
+       Delete_priv, 
+       Create_priv, 
+       Drop_priv 
+FROM mysql.user 
+WHERE User IN ('cliente', 'creador', 'admins');
+
+-- Mostrar permisos específicos en la base de datos Project
+SELECT User, Host, Db, Select_priv, Insert_priv, Update_priv, Delete_priv 
+FROM mysql.db 
+WHERE Db = 'Project' AND User IN ('cliente', 'creador', 'admins');
 
 -- Vista Roles: mapea el tipo de usuario a su rol funcional dentro del sistema.
 CREATE OR REPLACE VIEW Roles AS
@@ -345,5 +445,62 @@ SELECT * FROM Perfil;
 SELECT * FROM Contenido;
 SELECT * FROM Suscripcion;
 SELECT * FROM Pago;
-SELECT * FROM Mensaje;
 
+-- ====================================
+-- TABLAS DE REDES SOCIALES Y RECUPERACIÓN
+-- (Ejecutar en la BD existente)
+-- ====================================
+
+-- Solicitudes de amistad y amistades confirmadas
+CREATE TABLE IF NOT EXISTS Amistad (
+    IdAmistad      INT PRIMARY KEY AUTO_INCREMENT,
+    IdSolicitante  INT NOT NULL,
+    IdReceptor     INT NOT NULL,
+    Estado         VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+    FechaSolicitud DATETIME NOT NULL,
+    FechaRespuesta DATETIME,
+    FOREIGN KEY (IdSolicitante) REFERENCES Usuarios(IdUsuario),
+    FOREIGN KEY (IdReceptor)    REFERENCES Usuarios(IdUsuario),
+    UNIQUE KEY uq_amistad (IdSolicitante, IdReceptor)
+);
+
+-- Grupos de chat
+CREATE TABLE IF NOT EXISTS Grupo (
+    IdGrupo       INT PRIMARY KEY AUTO_INCREMENT,
+    Nombre        VARCHAR(64) NOT NULL,
+    IdCreador     INT NOT NULL,
+    FechaCreacion DATETIME NOT NULL,
+    FOREIGN KEY (IdCreador) REFERENCES Usuarios(IdUsuario)
+);
+
+-- Miembros de cada grupo
+CREATE TABLE IF NOT EXISTS MiembroGrupo (
+    IdGrupo    INT NOT NULL,
+    IdUsuario  INT NOT NULL,
+    FechaUnion DATETIME NOT NULL,
+    PRIMARY KEY (IdGrupo, IdUsuario),
+    FOREIGN KEY (IdGrupo)   REFERENCES Grupo(IdGrupo),
+    FOREIGN KEY (IdUsuario) REFERENCES Usuarios(IdUsuario)
+);
+
+-- Mensajes dentro de grupos
+CREATE TABLE IF NOT EXISTS MensajeGrupo (
+    IdMensaje  INT PRIMARY KEY AUTO_INCREMENT,
+    IdGrupo    INT NOT NULL,
+    IdEmisor   INT NOT NULL,
+    Contenido  VARCHAR(1024) NOT NULL,
+    FechaEnvio DATETIME NOT NULL,
+    FOREIGN KEY (IdGrupo)  REFERENCES Grupo(IdGrupo),
+    FOREIGN KEY (IdEmisor) REFERENCES Usuarios(IdUsuario)
+);
+
+-- Códigos temporales para recuperación de contraseña
+CREATE TABLE IF NOT EXISTS RecuperacionPassword (
+    IdRecuperacion  INT PRIMARY KEY AUTO_INCREMENT,
+    IdUsuario       INT NOT NULL,
+    Codigo          VARCHAR(8) NOT NULL,
+    FechaExpiracion DATETIME NOT NULL,
+    Usado           TINYINT(1) NOT NULL DEFAULT 0,
+    FOREIGN KEY (IdUsuario) REFERENCES Usuarios(IdUsuario)
+);
+SELECT * FROM Mensaje;

@@ -92,6 +92,8 @@ class Usuario {
             $this->id = $conn->insert_id; // ID generado por AUTO_INCREMENT
             $stmt->close();
             $db->cerrarConexion();
+            require_once __DIR__ . '/modelPerfil.php';
+            Perfil::crear($this->id);
             return true;
         }
 

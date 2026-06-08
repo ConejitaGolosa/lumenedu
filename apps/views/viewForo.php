@@ -47,7 +47,7 @@ $comentarios = Comentario::getByForo($idForo);
             <?php $respuestas = Comentario::getRespuestas($c['IdComentario']); ?>
             <div class="comment" id="comentario-<?= $c['IdComentario'] ?>">
                 <div class="comment-header">
-                    <span class="comment-author"><?= htmlspecialchars($c['NombreUsuario']) ?></span>
+                    <span class="comment-author"><?= htmlspecialchars($c['NombreUsuario']) ?><?= rolBadge($c['TipoUsuario']) ?></span>
                     <span class="badge badge-muted comment-role"><?= htmlspecialchars($c['TipoUsuario']) ?></span>
                     <span class="comment-date"><?= htmlspecialchars($c['FechaComentario']) ?></span>
                 </div>
@@ -76,7 +76,7 @@ $comentarios = Comentario::getByForo($idForo);
                         <?php foreach ($respuestas as $r): ?>
                             <div class="reply">
                                 <div class="comment-header">
-                                    <span class="comment-author"><?= htmlspecialchars($r['NombreUsuario']) ?></span>
+                                    <span class="comment-author"><?= htmlspecialchars($r['NombreUsuario']) ?><?= rolBadge($r['TipoUsuario']) ?></span>
                                     <span class="badge badge-muted comment-role"><?= htmlspecialchars($r['TipoUsuario']) ?></span>
                                     <span class="comment-date"><?= htmlspecialchars($r['FechaComentario']) ?></span>
                                 </div>

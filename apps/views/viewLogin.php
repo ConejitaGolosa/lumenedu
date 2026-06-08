@@ -29,4 +29,7 @@
     <p class="form-footer">
         ¿No tienes cuenta? <a href="index.php?page=viewRegistro">Regístrate aquí</a>
     </p>
+    <p class="form-footer">
+        <a href="index.php?page=viewRecuperarPassword">¿Olvidaste tu contraseña?</a>
+    </p>
 </div>

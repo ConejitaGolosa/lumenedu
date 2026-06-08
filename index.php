@@ -30,6 +30,26 @@ $controllerMap = [
     'comentarForo'           => 'controllerForo',
     'actualizarDiasMinimos'  => 'controllerProfesor',
     'capturarPago'           => 'controllerPago',
+    // Perfil
+    'actualizarPerfil'       => 'controllerPerfil',
+    'actualizarCuenta'       => 'controllerPerfil',
+    'cambiarPassword'        => 'controllerPerfil',
+    'subirFotoPerfil'        => 'controllerPerfil',
+    'eliminarFotoPerfil'     => 'controllerPerfil',
+    // Amistad
+    'enviarSolicitud'        => 'controllerAmistad',
+    'aceptarSolicitud'       => 'controllerAmistad',
+    'rechazarSolicitud'      => 'controllerAmistad',
+    'cancelarSolicitud'      => 'controllerAmistad',
+    'eliminarAmigo'          => 'controllerAmistad',
+    // Mensajes y grupos
+    'enviarMensaje'          => 'controllerMensaje',
+    'enviarMensajeGrupo'     => 'controllerMensaje',
+    'crearGrupo'             => 'controllerMensaje',
+    'agregarAlGrupo'         => 'controllerMensaje',
+    // Recuperación de contraseña
+    'solicitarCodigo'        => 'controllerRecuperacion',
+    'resetPassword'          => 'controllerRecuperacion',
 ];
 
 // Si el POST llegó vacío pero hay Content-Length, el archivo excedió post_max_size
@@ -55,6 +75,9 @@ $allowedPages = [
     'viewVideos', 'viewVideo', 'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
     'viewAdminPanel', 'viewNotificaciones', 'viewTickets', 'viewSolicitudes',
     'viewForos', 'viewForo', 'viewConfigProfesor', 'viewSuscribirse',
+    'viewPerfil', 'viewEditarPerfil',
+    'viewMensajes', 'viewGrupos', 'viewGrupo',
+    'viewRecuperarPassword',
 ];
 
 if (!in_array($page, $allowedPages)) {
@@ -67,11 +90,21 @@ if (isset($_SESSION['usuario_id']) && in_array($page, ['viewLogin', 'viewRegistr
     exit;
 }
 
-// Contador de notificaciones no leídas para el badge del nav
+// Contadores de badges del nav
 $notifCount = 0;
+$mensajesCount = 0;
 if (isset($_SESSION['usuario_id'])) {
     require_once 'apps/models/modelNotificacion.php';
-    $notifCount = Notificacion::countNoLeidas((int)$_SESSION['usuario_id']);
+    require_once 'apps/models/modelMensaje.php';
+    $notifCount    = Notificacion::countNoLeidas((int)$_SESSION['usuario_id']);
+    $mensajesCount = Mensaje::countNoLeidos((int)$_SESSION['usuario_id']);
+}
+
+// Helper: medalla de rol para Moderadores y Administradores
+function rolBadge(string $tipo): string {
+    if ($tipo === 'Administrador') return '<span class="rol-badge rol-admin">Admin</span>';
+    if ($tipo === 'Moderador')     return '<span class="rol-badge rol-mod">Mod</span>';
+    return '';
 }
 ?>
 <!DOCTYPE html>
@@ -127,6 +160,17 @@ if (isset($_SESSION['usuario_id'])) {
                         <span class="nav-badge"><?= $notifCount ?></span>
                     <?php endif; ?>
                 </span>
+
+                <span class="nav-notif-wrap">
+                    <a href="index.php?page=viewMensajes">Mensajes</a>
+                    <?php if ($mensajesCount > 0): ?>
+                        <span class="nav-badge"><?= $mensajesCount ?></span>
+                    <?php endif; ?>
+                </span>
+
+                <a href="index.php?page=viewGrupos">Grupos</a>
+
+                <a href="index.php?page=viewPerfil&id=<?= $_SESSION['usuario_id'] ?>">Mi perfil</a>
 
                 <!-- Mobile: user info + logout inside nav dropdown -->
                 <div class="nav-user-mobile">
