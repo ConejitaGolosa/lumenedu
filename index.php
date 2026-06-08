@@ -79,59 +79,87 @@ if (isset($_SESSION['usuario_id'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LumenEdu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="public/css/style.css">
 </head>
 <body>
 
 <header>
-    <h1>LumenEdu</h1>
-    <nav>
-        <a href="index.php?page=viewHome">Inicio</a>
-        <a href="index.php?page=viewVideos">Videos</a>
-        <a href="index.php?page=viewForos">Foros</a>
+    <div class="nav-inner">
+        <a href="index.php?page=viewHome" class="nav-logo">Lumen<span>Edu</span></a>
+
+        <button class="nav-toggle" aria-label="Menú" aria-expanded="false">
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav class="nav-links">
+            <a href="index.php?page=viewHome">Inicio</a>
+            <a href="index.php?page=viewVideos">Videos</a>
+            <a href="index.php?page=viewForos">Foros</a>
+            <a href="index.php?page=viewAbout">Nosotros</a>
+
+            <?php if (isset($_SESSION['usuario_id'])): ?>
+
+                <?php if ($_SESSION['usuario_tipo'] === 'Creador'): ?>
+                    <a href="index.php?page=viewSubirVideo">Subir video</a>
+                    <a href="index.php?page=viewMisVideos">Mis videos</a>
+                    <a href="index.php?page=viewSolicitudes">Solicitudes</a>
+                    <a href="index.php?page=viewConfigProfesor">Disponibilidad</a>
+                <?php endif; ?>
+
+                <?php if ($_SESSION['usuario_tipo'] === 'Suscriptor'): ?>
+                    <a href="index.php?page=viewTickets">Mis tickets</a>
+                <?php endif; ?>
+
+                <?php if (in_array($_SESSION['usuario_tipo'], ['Administrador', 'Moderador'])): ?>
+                    <a href="index.php?page=viewAdminPanel">
+                        <?= $_SESSION['usuario_tipo'] === 'Administrador' ? 'Administración' : 'Moderación' ?>
+                    </a>
+                <?php endif; ?>
+
+                <span class="nav-notif-wrap">
+                    <a href="index.php?page=viewNotificaciones">Notificaciones</a>
+                    <?php if ($notifCount > 0): ?>
+                        <span class="nav-badge"><?= $notifCount ?></span>
+                    <?php endif; ?>
+                </span>
+
+                <!-- Mobile: user info + logout inside nav dropdown -->
+                <div class="nav-user-mobile">
+                    <span style="font-size:.82rem; font-weight:600; color:var(--text);">
+                        <?= htmlspecialchars($_SESSION['usuario_nombre']) ?>
+                    </span>
+                    <span style="font-size:.72rem; color:var(--text-light);">
+                        <?= htmlspecialchars($_SESSION['usuario_tipo']) ?>
+                    </span>
+                    <a href="index.php?action=logout" class="btn btn-secondary btn-sm mt-1" style="width:fit-content;">Cerrar sesión</a>
+                </div>
+
+            <?php else: ?>
+                <a href="index.php?page=viewLogin">Iniciar sesión</a>
+                <a href="index.php?page=viewRegistro">Registrarse</a>
+            <?php endif; ?>
+        </nav>
 
         <?php if (isset($_SESSION['usuario_id'])): ?>
-
-            <?php if ($_SESSION['usuario_tipo'] === 'Creador'): ?>
-                <a href="index.php?page=viewSubirVideo">Subir video</a>
-                <a href="index.php?page=viewMisVideos">Mis videos</a>
-                <a href="index.php?page=viewSolicitudes">Solicitudes</a>
-                <a href="index.php?page=viewConfigProfesor">Disponibilidad</a>
-            <?php endif; ?>
-
-            <?php if ($_SESSION['usuario_tipo'] === 'Suscriptor'): ?>
-                <a href="index.php?page=viewTickets">Mis tickets</a>
-            <?php endif; ?>
-
-            <?php if (in_array($_SESSION['usuario_tipo'], ['Administrador', 'Moderador'])): ?>
-                <a href="index.php?page=viewAdminPanel">
-                    <?= $_SESSION['usuario_tipo'] === 'Administrador' ? 'Admin' : 'Moderación' ?>
-                </a>
-            <?php endif; ?>
-
-            <!-- Badge de notificaciones -->
-            <a href="index.php?page=viewNotificaciones">
-                Notificaciones<?= $notifCount > 0 ? " ($notifCount)" : '' ?>
-            </a>
-
-            <span>
-                <strong><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></strong>
-                (<?= htmlspecialchars($_SESSION['usuario_tipo']) ?>)
-            </span>
-            <a href="index.php?action=logout">Salir</a>
-
+        <div class="nav-user">
+            <span class="nav-user-name"><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></span>
+            <span class="nav-user-role"><?= htmlspecialchars($_SESSION['usuario_tipo']) ?></span>
+            <a href="index.php?action=logout" class="nav-logout">Salir</a>
+        </div>
         <?php else: ?>
-            <a href="index.php?page=viewLogin">Iniciar sesión</a>
-            <a href="index.php?page=viewRegistro">Registrarse</a>
+        <div class="nav-user">
+            <a href="index.php?page=viewLogin" class="btn btn-secondary btn-sm">Entrar</a>
+            <a href="index.php?page=viewRegistro" class="btn btn-primary btn-sm">Registrarse</a>
+        </div>
         <?php endif; ?>
-
-        <a href="index.php?page=viewAbout">Sobre nosotros</a>
-    </nav>
+    </div>
 </header>
 
 <main>
     <?php
-    // Flash messages (se muestran una vez y se borran)
     if (!empty($_SESSION['error'])) {
         echo '<p class="msg-error">' . htmlspecialchars($_SESSION['error']) . '</p>';
         unset($_SESSION['error']);
@@ -146,8 +174,9 @@ if (isset($_SESSION['usuario_id'])) {
 </main>
 
 <footer>
-    <p>&copy; <?= date("Y") ?> LumenEdu</p>
+    <p>&copy; <?= date("Y") ?> LumenEdu &mdash; Plataforma educativa</p>
 </footer>
 
+<script src="public/js/main.js"></script>
 </body>
 </html>

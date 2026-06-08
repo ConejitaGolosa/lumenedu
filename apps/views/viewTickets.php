@@ -1,7 +1,7 @@
 <?php
 // Vista: gestión de tickets y solicitudes de clase (solo Suscriptores)
 if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_tipo'] !== 'Suscriptor') {
-    echo '<p>Esta sección es exclusiva para alumnos suscritos.</p>';
+    echo '<div class="alert alert-warn">Esta sección es exclusiva para alumnos suscritos.</div>';
     return;
 }
 
@@ -15,10 +15,9 @@ $usados        = Ticket::usadosEsteMes($idUsuario);
 $disponibles   = 3 - $usados;
 $misTickets    = Ticket::getMisTickets($idUsuario);
 $desbloqueados = Ticket::profesoresDesbloqueados($idUsuario);
-$profesores    = Video::getTodosProfesores();   // incluye DiasAntMinimo
+$profesores    = Video::getTodosProfesores();
 $solicitudes   = SolicitudClase::getDeEstudiante($idUsuario);
 
-// Mapa idProfesor → DiasAntMinimo para los profesores con ticket (se usa en el JS)
 $diasPorProfesor = [];
 foreach ($misTickets as $t) {
     $diasPorProfesor[$t['IdProfesor']] = Usuario::getMinDias($t['IdProfesor']);
@@ -30,81 +29,114 @@ $etiqEstado = [
     'Rechazada'              => 'Rechazada',
     'AceptadaConCondiciones' => 'Aceptada con condiciones',
 ];
+$badgeSolicitud = [
+    'Pendiente'              => 'badge-warn',
+    'Aceptada'               => 'badge-ok',
+    'Rechazada'              => 'badge-error',
+    'AceptadaConCondiciones' => 'badge-gold',
+];
 ?>
-<h2>Mis Tickets</h2>
 
-<p>Tickets disponibles este mes: <strong><?= $disponibles ?> / 3</strong></p>
+<div class="page-header">
+    <h2>Mis Tickets</h2>
+    <p>Gestiona tus tickets mensuales y solicitudes de clase virtual.</p>
+</div>
 
+<!-- Contador de tickets -->
+<div class="ticket-counter">
+    <div>
+        <div class="count"><?= $disponibles ?> / 3</div>
+        <div class="label">Tickets disponibles este mes</div>
+    </div>
+    <?php if ($disponibles <= 0): ?>
+        <span class="badge badge-warn">Se renuevan el próximo mes</span>
+    <?php endif; ?>
+</div>
+
+<!-- ── PROFESORES DESBLOQUEADOS ──────────────────────────────── -->
 <?php if (!empty($misTickets)): ?>
-    <h3>Profesores desbloqueados este mes</h3>
-    <ul>
-        <?php foreach ($misTickets as $t): ?>
-            <li>
-                <strong><?= htmlspecialchars($t['Profesor']) ?></strong>
-                — usado el <?= htmlspecialchars($t['FechaUso']) ?>
-            </li>
-        <?php endforeach; ?>
-    </ul>
-<?php endif; ?>
-
-<!-- USAR TICKET -->
-<?php if ($disponibles > 0 && !empty($profesores)): ?>
-    <h3>Usar un ticket</h3>
-    <form action="index.php" method="POST">
-        <input type="hidden" name="action" value="usarTicket">
-        <label for="id_profesor">Selecciona un profesor:</label><br>
-        <select id="id_profesor" name="id_profesor" required>
-            <option value="">— Elige un profesor —</option>
-            <?php foreach ($profesores as $p): ?>
-                <?php if (!in_array($p['IdUsuario'], $desbloqueados)): ?>
-                    <option value="<?= $p['IdUsuario'] ?>">
-                        <?= htmlspecialchars($p['NombreUsuario']) ?>
-                    </option>
-                <?php endif; ?>
-            <?php endforeach; ?>
-        </select><br><br>
-        <input type="submit" value="Usar ticket">
-    </form>
-<?php elseif ($disponibles <= 0): ?>
-    <p><em>Ya usaste tus 3 tickets este mes. Se renuevan el próximo mes.</em></p>
-<?php endif; ?>
-
-<hr>
-
-<!-- SOLICITAR CLASE VIRTUAL -->
-<?php if (!empty($desbloqueados)): ?>
-    <h3>Solicitar clase virtual</h3>
-    <p>Solo puedes solicitar clase a los profesores con los que tienes ticket este mes.</p>
-
-    <form action="index.php" method="POST" id="form-solicitud">
-        <input type="hidden" name="action" value="solicitarClase">
-
-        <label for="prof_clase">Profesor:</label><br>
-        <select id="prof_clase" name="id_profesor" required>
-            <option value="" data-dias="1">— Elige un profesor —</option>
+    <div class="section">
+        <h3 class="section-title">Profesores desbloqueados este mes</h3>
+        <div class="grid-list">
             <?php foreach ($misTickets as $t): ?>
-                <?php $dias = $diasPorProfesor[$t['IdProfesor']] ?? 1; ?>
-                <option value="<?= $t['IdProfesor'] ?>" data-dias="<?= $dias ?>">
-                    <?= htmlspecialchars($t['Profesor']) ?>
-                    (requiere <?= $dias ?> día<?= $dias !== 1 ? 's' : '' ?> de anticipación)
-                </option>
+                <div class="card" style="display:flex; align-items:center; justify-content:space-between; padding:.85rem 1.1rem;">
+                    <strong><?= htmlspecialchars($t['Profesor']) ?></strong>
+                    <small>Usado el <?= htmlspecialchars($t['FechaUso']) ?></small>
+                </div>
             <?php endforeach; ?>
-        </select><br><br>
+        </div>
+    </div>
+<?php endif; ?>
 
-        <p id="aviso_dias" style="color:#856404; background:#fff3cd;
-           padding:6px 10px; border-radius:4px; display:none;"></p>
+<!-- ── USAR TICKET ───────────────────────────────────────────── -->
+<?php if ($disponibles > 0 && !empty($profesores)): ?>
+    <div class="section">
+        <h3 class="section-title">Usar un ticket</h3>
+        <div class="card" style="max-width:420px;">
+            <form action="index.php" method="POST">
+                <input type="hidden" name="action" value="usarTicket">
+                <div class="form-group">
+                    <label for="id_profesor">Selecciona un profesor</label>
+                    <select id="id_profesor" name="id_profesor" required>
+                        <option value="">— Elige un profesor —</option>
+                        <?php foreach ($profesores as $p): ?>
+                            <?php if (!in_array($p['IdUsuario'], $desbloqueados)): ?>
+                                <option value="<?= $p['IdUsuario'] ?>">
+                                    <?= htmlspecialchars($p['NombreUsuario']) ?>
+                                </option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Usar ticket</button>
+            </form>
+        </div>
+    </div>
+<?php elseif ($disponibles <= 0): ?>
+    <div class="alert alert-warn">Ya usaste tus 3 tickets este mes. Se renuevan el próximo mes.</div>
+<?php endif; ?>
 
-        <label for="fecha_propuesta">Fecha y hora propuesta:</label><br>
-        <input type="datetime-local" id="fecha_propuesta" name="fecha_propuesta"
-               min="<?= date('Y-m-d\TH:i') ?>" required><br><br>
+<!-- ── SOLICITAR CLASE VIRTUAL ───────────────────────────────── -->
+<?php if (!empty($desbloqueados)): ?>
+    <div class="section">
+        <h3 class="section-title">Solicitar clase virtual</h3>
+        <p>Solo puedes solicitar clase a los profesores con ticket activo este mes.</p>
 
-        <input type="submit" value="Enviar solicitud">
-    </form>
+        <div class="card" style="max-width:480px;">
+            <form action="index.php" method="POST" id="form-solicitud">
+                <input type="hidden" name="action" value="solicitarClase">
+
+                <div class="form-group">
+                    <label for="prof_clase">Profesor</label>
+                    <select id="prof_clase" name="id_profesor" required>
+                        <option value="" data-dias="1">— Elige un profesor —</option>
+                        <?php foreach ($misTickets as $t): ?>
+                            <?php $dias = $diasPorProfesor[$t['IdProfesor']] ?? 1; ?>
+                            <option value="<?= $t['IdProfesor'] ?>" data-dias="<?= $dias ?>">
+                                <?= htmlspecialchars($t['Profesor']) ?>
+                                (<?= $dias ?> día<?= $dias !== 1 ? 's' : '' ?> de anticipación)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <div id="aviso_dias" class="alert alert-warn mb-2" style="display:none;"></div>
+
+                <div class="form-group">
+                    <label for="fecha_propuesta">Fecha y hora propuesta</label>
+                    <input type="datetime-local" id="fecha_propuesta" name="fecha_propuesta"
+                           min="<?= date('Y-m-d\TH:i') ?>" required>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Enviar solicitud</button>
+            </form>
+        </div>
+    </div>
 
     <script>
     (function () {
-        const sel  = document.getElementById('prof_clase');
-        const inp  = document.getElementById('fecha_propuesta');
+        const sel   = document.getElementById('prof_clase');
+        const inp   = document.getElementById('fecha_propuesta');
         const aviso = document.getElementById('aviso_dias');
 
         function actualizarMin() {
@@ -135,21 +167,46 @@ $etiqEstado = [
     </script>
 <?php endif; ?>
 
-<hr>
+<!-- ── MIS SOLICITUDES ENVIADAS ──────────────────────────────── -->
+<div class="section">
+    <h3 class="section-title">Mis solicitudes de clase</h3>
 
-<!-- MIS SOLICITUDES ENVIADAS -->
-<h3>Mis solicitudes de clase</h3>
-<?php if (empty($solicitudes)): ?>
-    <p>No has enviado solicitudes aún.</p>
-<?php else: ?>
-    <?php foreach ($solicitudes as $s): ?>
-        <div style="border:1px solid #ddd; padding:10px; margin-bottom:8px; border-radius:4px;">
-            <strong><?= htmlspecialchars($s['Profesor']) ?></strong> —
-            Fecha propuesta: <?= htmlspecialchars($s['FechaPropuesta']) ?> —
-            Estado: <strong><?= htmlspecialchars($etiqEstado[$s['Estado']] ?? $s['Estado']) ?></strong>
-            <?php if ($s['RespuestaProfesor']): ?>
-                <br><em>Respuesta: <?= htmlspecialchars($s['RespuestaProfesor']) ?></em>
-            <?php endif; ?>
+    <?php if (empty($solicitudes)): ?>
+        <div class="empty-state" style="padding:1.5rem;">
+            <p>No has enviado solicitudes aún.</p>
         </div>
-    <?php endforeach; ?>
-<?php endif; ?>
+    <?php else: ?>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Profesor</th>
+                        <th>Fecha propuesta</th>
+                        <th>Estado</th>
+                        <th>Respuesta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($solicitudes as $s): ?>
+                        <tr>
+                            <td><strong><?= htmlspecialchars($s['Profesor']) ?></strong></td>
+                            <td style="white-space:nowrap;"><?= htmlspecialchars($s['FechaPropuesta']) ?></td>
+                            <td>
+                                <span class="badge <?= $badgeSolicitud[$s['Estado']] ?? 'badge-muted' ?>">
+                                    <?= htmlspecialchars($etiqEstado[$s['Estado']] ?? $s['Estado']) ?>
+                                </span>
+                            </td>
+                            <td>
+                                <?php if ($s['RespuestaProfesor']): ?>
+                                    <em><?= htmlspecialchars($s['RespuestaProfesor']) ?></em>
+                                <?php else: ?>
+                                    <span style="color:var(--text-light);">—</span>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>

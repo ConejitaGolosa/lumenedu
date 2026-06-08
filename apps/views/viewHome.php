@@ -6,46 +6,94 @@ $tipo      = $_SESSION['usuario_tipo']   ?? null;
 $idUsuario = (int)($_SESSION['usuario_id'] ?? 0);
 ?>
 
-<h2>Bienvenido a LumenEdu</h2>
-
 <?php if (!$tipo): ?>
-    <p>La plataforma donde profesores comparten conocimiento y alumnos aprenden a su ritmo.</p>
-    <p>
-        <a href="index.php?page=viewRegistro">Crear cuenta</a> &nbsp;|&nbsp;
-        <a href="index.php?page=viewLogin">Iniciar sesión</a> &nbsp;|&nbsp;
-        <a href="index.php?page=viewVideos">Ver videos públicos</a>
-    </p>
+    <div class="hero">
+        <p class="hero-eyebrow">Plataforma educativa</p>
+        <h2>Aprende y enseña sin límites</h2>
+        <p>Profesores comparten conocimiento. Alumnos aprenden a su ritmo. Una comunidad seria, enfocada en el estudio.</p>
+        <div class="hero-actions">
+            <a href="index.php?page=viewRegistro" class="btn btn-primary btn-lg">Crear cuenta gratis</a>
+            <a href="index.php?page=viewVideos"   class="btn btn-secondary btn-lg">Ver videos públicos</a>
+        </div>
+        <div class="hero-divider"></div>
+    </div>
+
+    <div class="feature-strip">
+        <div class="feature-item">
+            <div class="feature-icon">🎓</div>
+            <h4>Aprende a tu ritmo</h4>
+            <p>Videos y materiales organizados por materia, disponibles cuando los necesitas.</p>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">💬</div>
+            <h4>Foros de comunidad</h4>
+            <p>Debates, preguntas y respuestas entre alumnos y profesores.</p>
+        </div>
+        <div class="feature-item">
+            <div class="feature-icon">📅</div>
+            <h4>Clases virtuales</h4>
+            <p>Solicita sesiones personalizadas directamente con tu profesor.</p>
+        </div>
+    </div>
 
 <?php elseif ($tipo === 'Administrador'): ?>
-    <p>Panel de administración.</p>
-    <ul>
-        <li><a href="index.php?page=viewAdminPanel">Revisar videos pendientes</a></li>
-        <li><a href="index.php?page=viewNotificaciones">Mis notificaciones</a></li>
-    </ul>
+    <div class="dashboard-greeting">
+        <h2>Panel de administración</h2>
+        <p>Bienvenido. Desde aquí gestionas la plataforma completa.</p>
+    </div>
+    <div class="dashboard-grid">
+        <a href="index.php?page=viewAdminPanel"     class="dashboard-link">Revisar videos<small>Videos pendientes de aprobación</small></a>
+        <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y novedades</small></a>
+    </div>
+
+<?php elseif ($tipo === 'Moderador'): ?>
+    <div class="dashboard-greeting">
+        <h2>Panel de moderación</h2>
+        <p>Bienvenido. Revisa el contenido pendiente de la plataforma.</p>
+    </div>
+    <div class="dashboard-grid">
+        <a href="index.php?page=viewAdminPanel"     class="dashboard-link">Moderación<small>Videos pendientes de revisión</small></a>
+        <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y novedades</small></a>
+    </div>
 
 <?php elseif ($tipo === 'Creador'): ?>
-    <p>Hola, <strong><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></strong>. Panel del profesor.</p>
-    <ul>
-        <li><a href="index.php?page=viewSubirVideo">Subir nuevo video</a></li>
-        <li><a href="index.php?page=viewMisVideos">Mis videos</a></li>
-        <li><a href="index.php?page=viewSolicitudes">Solicitudes de clase recibidas</a></li>
-        <li><a href="index.php?page=viewVideos">Ver videos de la plataforma</a></li>
-        <li><a href="index.php?page=viewNotificaciones">Mis notificaciones</a></li>
-    </ul>
+    <div class="dashboard-greeting">
+        <h2>Hola, <?= htmlspecialchars($_SESSION['usuario_nombre']) ?></h2>
+        <p>Panel del profesor. Gestiona tu contenido y atiende a tus alumnos.</p>
+    </div>
+    <div class="dashboard-grid">
+        <a href="index.php?page=viewSubirVideo"     class="dashboard-link">Subir video<small>Nuevo contenido para tus alumnos</small></a>
+        <a href="index.php?page=viewMisVideos"      class="dashboard-link">Mis videos<small>Gestiona tu biblioteca</small></a>
+        <a href="index.php?page=viewSolicitudes"    class="dashboard-link">Solicitudes<small>Peticiones de clase recibidas</small></a>
+        <a href="index.php?page=viewVideos"         class="dashboard-link">Explorar<small>Videos de la plataforma</small></a>
+        <a href="index.php?page=viewForos"          class="dashboard-link">Foros<small>Participa en la comunidad</small></a>
+        <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y respuestas</small></a>
+    </div>
 
 <?php elseif ($tipo === 'Suscriptor'): ?>
-    <p>Hola, <strong><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></strong>. Panel del alumno.</p>
-    <ul>
-        <li><a href="index.php?page=viewVideos">Ver videos</a></li>
-        <li><a href="index.php?page=viewTickets">Mis tickets y solicitudes de clase</a></li>
-        <li><a href="index.php?page=viewNotificaciones">Mis notificaciones</a></li>
-    </ul>
+    <div class="dashboard-greeting">
+        <h2>Hola, <?= htmlspecialchars($_SESSION['usuario_nombre']) ?></h2>
+        <p>Panel del alumno. Accede a tu contenido y gestiona tus clases.</p>
+    </div>
+    <div class="dashboard-grid">
+        <a href="index.php?page=viewVideos"         class="dashboard-link">Ver videos<small>Todo el contenido disponible</small></a>
+        <a href="index.php?page=viewTickets"        class="dashboard-link">Mis tickets<small>Clases y suscripciones</small></a>
+        <a href="index.php?page=viewForos"          class="dashboard-link">Foros<small>Comunidad de estudio</small></a>
+        <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y respuestas</small></a>
+    </div>
 
 <?php elseif ($tipo === 'EstudianteGratis'): ?>
-    <p>Hola, <strong><?= htmlspecialchars($_SESSION['usuario_nombre']) ?></strong>. Bienvenido.</p>
-    <ul>
-        <li><a href="index.php?page=viewVideos">Ver videos públicos</a></li>
-        <li><a href="index.php?page=viewNotificaciones">Mis notificaciones</a></li>
-    </ul>
-    <p><small>Con una cuenta Suscriptor tendrías acceso a más contenido y clases en vivo.</small></p>
+    <div class="dashboard-greeting">
+        <h2>Hola, <?= htmlspecialchars($_SESSION['usuario_nombre']) ?></h2>
+        <p>Bienvenido a LumenEdu. Estás explorando con una cuenta gratuita.</p>
+    </div>
+    <div class="dashboard-grid">
+        <a href="index.php?page=viewVideos"         class="dashboard-link">Videos públicos<small>Contenido abierto a todos</small></a>
+        <a href="index.php?page=viewForos"          class="dashboard-link">Foros<small>Comunidad de estudio</small></a>
+        <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y novedades</small></a>
+    </div>
+    <div class="alert alert-warn mt-3">
+        Con una cuenta <strong>Suscriptor</strong> accedes a más contenido y a clases virtuales.
+        <a href="index.php?page=viewRegistro">Actualizar cuenta</a>
+    </div>
 <?php endif; ?>

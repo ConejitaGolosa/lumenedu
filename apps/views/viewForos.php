@@ -1,64 +1,82 @@
 <?php
-// Vista: feed principal de foros comunitarios (accesible a todos)
+// Vista: feed principal de foros comunitarios
 require_once __DIR__ . '/../models/modelForo.php';
 
-$foros     = Foro::getLista(100);
-$idUsuario = $_SESSION['usuario_id'] ?? null;
+$foros      = Foro::getLista(100);
+$idUsuario  = $_SESSION['usuario_id'] ?? null;
 $categorias = ['General', 'Matemáticas', 'Ciencias', 'Historia', 'Lenguaje', 'Tecnología', 'Arte', 'Otros'];
 ?>
 
-<h2>Foros de la comunidad</h2>
-<p>Debates y preguntas sobre materias, técnicas de estudio y más. Participan alumnos y profesores.</p>
+<div class="page-header page-header-row">
+    <div>
+        <h2>Foros de la comunidad</h2>
+        <p>Debates y preguntas sobre materias, técnicas de estudio y más.</p>
+    </div>
+</div>
 
 <?php if ($idUsuario): ?>
-    <details style="margin-bottom:20px; border:1px solid #ccc; padding:12px; border-radius:4px;">
-        <summary style="cursor:pointer; font-weight:bold;">+ Crear nuevo hilo</summary>
-        <form action="index.php" method="POST" style="margin-top:12px;">
-            <input type="hidden" name="action" value="crearForo">
+    <div class="create-panel">
+        <button class="create-panel-toggle" type="button">
+            <span>+ Crear nuevo hilo</span>
+            <span class="chevron">▾</span>
+        </button>
+        <div class="create-panel-body">
+            <form action="index.php" method="POST" class="form-wide">
+                <input type="hidden" name="action" value="crearForo">
 
-            <label for="titulo_foro">Título <small>(máx. 128 caracteres)</small>:</label><br>
-            <input type="text" id="titulo_foro" name="titulo" maxlength="128" required
-                   style="width:100%; max-width:500px;"
-                   placeholder="¿Sobre qué quieres hablar?"><br><br>
+                <div class="form-group">
+                    <label for="titulo_foro">Título <small>(máx. 128 caracteres)</small></label>
+                    <input type="text" id="titulo_foro" name="titulo" maxlength="128" required
+                           placeholder="¿Sobre qué quieres hablar?">
+                </div>
 
-            <label for="cat_foro">Categoría:</label><br>
-            <select id="cat_foro" name="categoria">
-                <?php foreach ($categorias as $cat): ?>
-                    <option value="<?= $cat ?>"><?= $cat ?></option>
-                <?php endforeach; ?>
-            </select><br><br>
+                <div class="form-group">
+                    <label for="cat_foro">Categoría</label>
+                    <select id="cat_foro" name="categoria">
+                        <?php foreach ($categorias as $cat): ?>
+                            <option value="<?= $cat ?>"><?= $cat ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
 
-            <label for="contenido_foro">Contenido:</label><br>
-            <textarea id="contenido_foro" name="contenido" rows="5" cols="60" maxlength="5000"
-                      placeholder="Escribe tu pregunta o tema..." required></textarea><br><br>
+                <div class="form-group">
+                    <label for="contenido_foro">Contenido</label>
+                    <textarea id="contenido_foro" name="contenido" rows="5" maxlength="5000"
+                              placeholder="Escribe tu pregunta o tema…" required></textarea>
+                </div>
 
-            <input type="submit" value="Publicar hilo">
-        </form>
-    </details>
+                <button type="submit" class="btn btn-primary">Publicar hilo</button>
+            </form>
+        </div>
+    </div>
 <?php else: ?>
-    <p><a href="index.php?page=viewLogin">Inicia sesión</a> para crear un hilo.</p>
+    <div class="alert alert-warn mb-3">
+        <a href="index.php?page=viewLogin">Inicia sesión</a> para crear un hilo.
+    </div>
 <?php endif; ?>
 
 <?php if (empty($foros)): ?>
-    <p>Aún no hay hilos. ¡Sé el primero en crear uno!</p>
+    <div class="empty-state">
+        <p>Aún no hay hilos. ¡Sé el primero en crear uno!</p>
+    </div>
 <?php else: ?>
-    <?php foreach ($foros as $f): ?>
-        <div style="border:1px solid #ddd; padding:12px; margin-bottom:10px; border-radius:4px;">
-            <a href="index.php?page=viewForo&id=<?= $f['IdForo'] ?>"
-               style="font-size:1.05em; font-weight:bold; text-decoration:none;">
-                <?= htmlspecialchars($f['Titulo']) ?>
-            </a>
-            <span style="background:#e9ecef; padding:2px 8px; border-radius:10px;
-                         font-size:0.8em; margin-left:8px;">
-                <?= htmlspecialchars($f['Categoria']) ?>
-            </span>
-            <br>
-            <small style="color:#666;">
-                Por <strong><?= htmlspecialchars($f['Autor']) ?></strong>
-                (<?= htmlspecialchars($f['TipoUsuario']) ?>) —
-                <?= htmlspecialchars($f['FechaPublicacion']) ?> —
-                <?= (int)$f['TotalComentarios'] ?> respuesta(s)
-            </small>
-        </div>
-    <?php endforeach; ?>
+    <div class="grid-list">
+        <?php foreach ($foros as $f): ?>
+            <div class="forum-card">
+                <a href="index.php?page=viewForo&id=<?= $f['IdForo'] ?>">
+                    <span class="forum-title"><?= htmlspecialchars($f['Titulo']) ?></span>
+                </a>
+                <div class="forum-meta">
+                    <span class="badge badge-gold"><?= htmlspecialchars($f['Categoria']) ?></span>
+                    &nbsp;·&nbsp;
+                    Por <strong><?= htmlspecialchars($f['Autor']) ?></strong>
+                    (<?= htmlspecialchars($f['TipoUsuario']) ?>)
+                    &nbsp;·&nbsp;
+                    <?= htmlspecialchars($f['FechaPublicacion']) ?>
+                    &nbsp;·&nbsp;
+                    <?= (int)$f['TotalComentarios'] ?> respuesta(s)
+                </div>
+            </div>
+        <?php endforeach; ?>
+    </div>
 <?php endif; ?>

@@ -1,7 +1,7 @@
 <?php
-// Vista: configuración de disponibilidad del profesor (días mínimos para clases)
+// Vista: configuración de disponibilidad del profesor
 if (!isset($_SESSION['usuario_id']) || $_SESSION['usuario_tipo'] !== 'Creador') {
-    echo '<p>Esta página es exclusiva para profesores.</p>';
+    echo '<div class="alert alert-warn">Esta página es exclusiva para profesores.</div>';
     return;
 }
 
@@ -11,27 +11,31 @@ $idUsuario  = (int)$_SESSION['usuario_id'];
 $diasActual = Usuario::getMinDias($idUsuario);
 ?>
 
-<h2>Configuración de disponibilidad</h2>
+<div class="page-header">
+    <a href="index.php?page=viewSolicitudes" class="btn btn-ghost btn-sm" style="margin-bottom:.75rem;">← Solicitudes</a>
+    <h2>Disponibilidad para clases</h2>
+    <p>Define cuántos días de anticipación mínima necesitan tus alumnos para solicitar una clase virtual.</p>
+</div>
 
-<p>
-    Define cuántos días de anticipación mínima necesitas para recibir solicitudes de clase virtual.<br>
-    Los alumnos verán un aviso si la fecha que proponen no cumple este plazo.
-</p>
+<div class="form-card" style="max-width:400px; margin:0;">
+    <div class="card-meta" style="margin-bottom:1.25rem;">
+        <span>Configuración actual:</span>
+        <span class="badge badge-gold"><?= $diasActual ?> día<?= $diasActual !== 1 ? 's' : '' ?></span>
+    </div>
 
-<form action="index.php" method="POST">
-    <input type="hidden" name="action" value="actualizarDiasMinimos">
+    <form action="index.php" method="POST">
+        <input type="hidden" name="action" value="actualizarDiasMinimos">
 
-    <label for="dias_minimos">
-        Días mínimos de anticipación <small>(entre 1 y 30)</small>:
-    </label><br>
-    <input type="number" id="dias_minimos" name="dias_minimos"
-           min="1" max="30" value="<?= $diasActual ?>" required
-           style="width:80px;"><br><br>
+        <div class="form-group">
+            <label for="dias_minimos">Días mínimos de anticipación <small>(1–30)</small></label>
+            <input type="number" id="dias_minimos" name="dias_minimos"
+                   min="1" max="30" value="<?= $diasActual ?>" required
+                   style="max-width:120px;">
+            <span class="form-hint">Los alumnos recibirán un aviso si la fecha propuesta no cumple este plazo.</span>
+        </div>
 
-    <p>Valor actual: <strong><?= $diasActual ?> día(s)</strong></p>
-
-    <input type="submit" value="Guardar configuración">
-</form>
-
-<br>
-<p><a href="index.php?page=viewSolicitudes">&larr; Volver a solicitudes</a></p>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Guardar</button>
+        </div>
+    </form>
+</div>
