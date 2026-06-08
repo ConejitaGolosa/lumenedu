@@ -29,6 +29,7 @@ $controllerMap = [
     'registrar'              => 'controllerUser',
     'subirVideo'             => 'controllerVideo',
     'publicarVideo'          => 'controllerVideo',
+    'editarVideo'            => 'controllerVideo',
     'comentarVideo'          => 'controllerVideo',
     'responderComentario'    => 'controllerVideo',
     'cambiarPrivacidad'      => 'controllerVideo',
@@ -88,7 +89,7 @@ $page = $_GET['page'] ?? 'viewHome';
 
 $allowedPages = [
     'viewHome', 'viewLogin', 'viewRegistro', 'viewAbout', 'viewConfirmacion',
-    'viewVideos', 'viewVideo', 'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
+    'viewVideos', 'viewVideo', 'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo', 'viewEditarVideo',
     'viewAdminPanel', 'viewNotificaciones', 'viewTickets', 'viewSolicitudes',
     'viewForos', 'viewForo', 'viewConfigProfesor', 'viewSuscribirse',
     'viewPerfil', 'viewEditarPerfil',
@@ -109,7 +110,7 @@ if (isset($_SESSION['usuario_id']) && in_array($page, ['viewLogin', 'viewRegistr
 // Redirige a login si el usuario no tiene sesión e intenta entrar a páginas protegidas
 $paginasProtegidas = [
     'viewEditarPerfil', 'viewMensajes', 'viewGrupos', 'viewGrupo',
-    'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
+    'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo', 'viewEditarVideo',
     'viewTickets', 'viewSolicitudes', 'viewConfigProfesor',
     'viewAdminPanel', 'viewNotificaciones', 'viewSuscribirse',
 ];

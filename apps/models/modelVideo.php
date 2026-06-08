@@ -55,13 +55,40 @@ class Video {
         return $ok;
     }
 
+    // El profesor edita los metadatos de un video publicado.
+    // $miniatura: false = no tocar | null = borrar | string = nueva ruta
+    public static function editar(int $idVideo, int $idProfesor, string $titulo, string $descripcion, string $privacidad, string $categoria, $miniatura = false): bool {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+
+        if ($miniatura !== false) {
+            $stmt = $conn->prepare(
+                "UPDATE Video SET Titulo=?, Descripcion=?, Privacidad=?, Categoria=?, Miniatura=?
+                 WHERE IdVideo=? AND IdProfesor=? AND Estado='Publicado'"
+            );
+            $stmt->bind_param("sssssii", $titulo, $descripcion, $privacidad, $categoria, $miniatura, $idVideo, $idProfesor);
+        } else {
+            $stmt = $conn->prepare(
+                "UPDATE Video SET Titulo=?, Descripcion=?, Privacidad=?, Categoria=?
+                 WHERE IdVideo=? AND IdProfesor=? AND Estado='Publicado'"
+            );
+            $stmt->bind_param("ssssii", $titulo, $descripcion, $privacidad, $categoria, $idVideo, $idProfesor);
+        }
+        $stmt->execute();
+        $ok = $stmt->errno === 0;
+        $stmt->close();
+        $db->cerrarConexion();
+        return $ok;
+    }
+
     // Todos los videos del profesor con su estado y resultado de revisión.
     public static function getMisVideos($idProfesor) {
         $db   = new Conexion();
         $conn = $db->getConexion();
 
         $query = "SELECT v.IdVideo, v.Titulo, v.ArchivoVideo, v.Estado,
-                         v.Privacidad, v.FechaSubida, v.FechaPublicacion,
+                         v.Privacidad, v.Categoria, v.Miniatura,
+                         v.FechaSubida, v.FechaPublicacion,
                          r.Validado, r.MotivoRechazo
                   FROM Video v
                   LEFT JOIN RevisionVideo r ON r.IdVideo = v.IdVideo
@@ -82,7 +109,7 @@ class Video {
         $conn = $db->getConexion();
         $stmt = $conn->prepare(
             "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad, v.Categoria,
-                    v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
+                    v.Miniatura, v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
              FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
              WHERE v.Estado = 'Publicado' AND v.Privacidad != 'Privado'
              ORDER BY v.FechaPublicacion DESC"
@@ -125,7 +152,7 @@ class Video {
         }
 
         $sql  = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad, v.Categoria,
-                        v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
+                        v.Miniatura, v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
                  FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
                  WHERE " . implode(' AND ', $where) . "
                  ORDER BY v.FechaPublicacion DESC LIMIT 200";

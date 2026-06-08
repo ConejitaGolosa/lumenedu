@@ -121,6 +121,94 @@ switch ($action) {
         }
         exit;
 
+    // ── EDITAR VIDEO ─────────────────────────────────────────
+    // El profesor edita título, descripción, categoría, privacidad y miniatura.
+    case 'editarVideo':
+        if ($tipoUsuario !== 'Creador') {
+            $_SESSION['error'] = 'Acción no permitida.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        $idVideo     = (int)($_POST['id_video']   ?? 0);
+        $titulo      = trim($_POST['titulo']       ?? '');
+        $descripcion = trim($_POST['descripcion']  ?? '');
+        $privacidad  = $_POST['privacidad']         ?? '';
+        $categoria   = $_POST['categoria']          ?? 'Otros';
+        $borrarMini  = !empty($_POST['borrar_miniatura']);
+
+        if (!$idVideo || empty($titulo)) {
+            $_SESSION['error'] = 'El título es obligatorio.';
+            header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+            exit;
+        }
+        if (!in_array($privacidad, ['Publico', 'Suscriptores', 'Privado'])) {
+            $_SESSION['error'] = 'Opción de privacidad inválida.';
+            header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+            exit;
+        }
+
+        $video = Video::getById($idVideo);
+        if (!$video || (int)$video['IdProfesor'] !== $idUsuario || $video['Estado'] !== 'Publicado') {
+            $_SESSION['error'] = 'Video no encontrado o no autorizado.';
+            header('Location: index.php?page=viewMisVideos');
+            exit;
+        }
+
+        // Procesar miniatura
+        $miniatura  = false; // false = no tocar
+        $uploadDir  = __DIR__ . '/../../public/uploads/miniaturas/';
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+
+        if (isset($_FILES['miniatura']) && $_FILES['miniatura']['error'] === UPLOAD_ERR_OK) {
+            $file     = $_FILES['miniatura'];
+            $finfo    = finfo_open(FILEINFO_MIME_TYPE);
+            $mime     = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            if ($file['size'] > 2 * 1024 * 1024) {
+                $_SESSION['error'] = 'La miniatura no puede superar 2 MB.';
+                header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+                exit;
+            }
+            if (!in_array($mime, ['image/jpeg', 'image/jpg', 'image/png'])) {
+                $_SESSION['error'] = 'Solo se aceptan imágenes PNG o JPG como miniatura.';
+                header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+                exit;
+            }
+
+            // Borrar miniatura anterior
+            if ($video['Miniatura']) {
+                $ant = __DIR__ . '/../../' . $video['Miniatura'];
+                if (file_exists($ant)) @unlink($ant);
+            }
+
+            $ext  = $mime === 'image/png' ? 'png' : 'jpg';
+            $name = 'thumb_' . $idVideo . '_' . time() . '.' . $ext;
+            if (!move_uploaded_file($file['tmp_name'], $uploadDir . $name)) {
+                $_SESSION['error'] = 'No se pudo guardar la miniatura.';
+                header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+                exit;
+            }
+            $miniatura = 'public/uploads/miniaturas/' . $name;
+
+        } elseif ($borrarMini) {
+            if ($video['Miniatura']) {
+                $ant = __DIR__ . '/../../' . $video['Miniatura'];
+                if (file_exists($ant)) @unlink($ant);
+            }
+            $miniatura = null; // null = SET Miniatura = NULL en BD
+        }
+
+        if (Video::editar($idVideo, $idUsuario, $titulo, $descripcion, $privacidad, $categoria, $miniatura)) {
+            $_SESSION['mensaje'] = 'Video actualizado correctamente.';
+            header('Location: index.php?page=viewMisVideos');
+        } else {
+            $_SESSION['error'] = 'No se pudieron guardar los cambios.';
+            header('Location: index.php?page=viewEditarVideo&id=' . $idVideo);
+        }
+        exit;
+
     // ── COMENTAR VIDEO ───────────────────────────────────────
     // Cualquier usuario autenticado puede comentar en videos que pueda ver.
     case 'comentarVideo':

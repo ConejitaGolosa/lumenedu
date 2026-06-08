@@ -94,6 +94,8 @@ $badgeEstado = [
                             <?php elseif ($v['Estado'] === 'Publicado'): ?>
                                 <a href="index.php?page=viewVideo&id=<?= $v['IdVideo'] ?>"
                                    class="btn btn-secondary btn-sm">Ver</a>
+                                <a href="index.php?page=viewEditarVideo&id=<?= $v['IdVideo'] ?>"
+                                   class="btn btn-ghost btn-sm">Editar</a>
                             <?php endif; ?>
 
                             <form action="index.php" method="POST"

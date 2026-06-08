@@ -48,7 +48,7 @@ $comentarios = Comentario::getByVideo($idVideo);
 </div>
 
 <div class="video-player-wrap">
-    <video controls>
+    <video controls <?= !empty($video['Miniatura']) ? 'poster="' . htmlspecialchars($video['Miniatura']) . '"' : '' ?>>
         <source src="<?= htmlspecialchars($video['ArchivoVideo']) ?>"
                 type="video/<?= pathinfo($video['ArchivoVideo'], PATHINFO_EXTENSION) ?>">
         Tu navegador no soporta el reproductor de video.

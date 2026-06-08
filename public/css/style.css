@@ -1972,6 +1972,41 @@ details.panel .panel-body {
   margin-top: .5rem;
 }
 
+/* ── EDITAR VIDEO ─────────────────────────────────────────── */
+.edit-video-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+.thumb-placeholder {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background: var(--surface-alt);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-light);
+  font-size: .85rem;
+  margin-bottom: .75rem;
+}
+
+/* Miniatura en las tarjetas de la lista de videos */
+.video-card-thumb {
+  width: calc(100% + 3rem);  /* 2 × 1.5rem padding horizontal */
+  margin: -1.25rem -1.5rem .85rem;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  display: block;
+}
+
+@media (max-width: 700px) {
+  .edit-video-grid { grid-template-columns: 1fr; }
+}
+
 /* ── BAN LIST ─────────────────────────────────────────────── */
 .ban-list {
   display: flex;

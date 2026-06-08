@@ -73,6 +73,10 @@ $categoriasVideo = ['Matemáticas','Física','Geometría','Química','Biología'
     <div class="grid">
         <?php foreach ($videos as $v): ?>
             <div class="card video-card">
+                <?php if (!empty($v['Miniatura'])): ?>
+                    <img src="<?= htmlspecialchars($v['Miniatura']) ?>"
+                         alt="" class="video-card-thumb">
+                <?php endif; ?>
                 <?php if ($v['Privacidad'] === 'Suscriptores'): ?>
                     <div class="video-access-badge">
                         <span class="badge badge-warn">Solo suscriptores</span>
