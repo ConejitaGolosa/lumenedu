@@ -7,6 +7,8 @@ $perfil    = Perfil::getByUsuario($idUsuario);
 $foto      = $perfil['FotoPerfil'] ? htmlspecialchars($perfil['FotoPerfil']) : null;
 ?>
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
 <div class="page-header">
     <h2>Editar perfil</h2>
     <p>Administra tu cuenta y personalización.</p>
@@ -29,14 +31,14 @@ $foto      = $perfil['FotoPerfil'] ? htmlspecialchars($perfil['FotoPerfil']) : n
                 <?php endif; ?>
             </div>
 
-            <form action="index.php" method="POST" enctype="multipart/form-data" class="mt-2">
-                <input type="hidden" name="action" value="subirFotoPerfil">
-                <div class="form-group">
-                    <label for="foto">Nueva foto (PNG o JPG, máx 2 MB)</label>
-                    <input type="file" id="foto" name="foto" accept="image/png,image/jpeg" required>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width:100%;">Subir foto</button>
-            </form>
+            <!-- Hidden file input — triggered by button below -->
+            <input type="file" id="fotoInput" name="foto" accept="image/png,image/jpeg"
+                   style="display:none;">
+
+            <button type="button" class="btn btn-primary mt-2" style="width:100%;"
+                    onclick="document.getElementById('fotoInput').click()">
+                Cambiar foto
+            </button>
 
             <?php if ($foto): ?>
                 <form action="index.php" method="POST" class="mt-1">
@@ -150,3 +152,119 @@ $foto      = $perfil['FotoPerfil'] ? htmlspecialchars($perfil['FotoPerfil']) : n
     </div><!-- /.edit-col-forms -->
 
 </div><!-- /.edit-profile-grid -->
+
+<!-- ══ MODAL DE RECORTE ══════════════════════════════════════════ -->
+<div id="cropModal" class="crop-modal" style="display:none;" role="dialog" aria-modal="true" aria-label="Recortar foto">
+    <div class="crop-modal-box">
+        <h3 style="margin-bottom:1rem;">Recortar foto de perfil</h3>
+        <p class="text-muted" style="font-size:.85rem; margin-bottom:.75rem;">
+            Arrastra para mover · Usa la rueda del ratón para ampliar/reducir
+        </p>
+        <div class="crop-preview">
+            <img id="cropImage" src="" alt="Vista previa para recorte">
+        </div>
+        <div class="crop-actions">
+            <button type="button" id="cropCancel" class="btn btn-secondary">Cancelar</button>
+            <button type="button" id="cropSave"   class="btn btn-primary">Recortar y subir</button>
+        </div>
+        <p id="cropStatus" style="font-size:.82rem; margin-top:.5rem; color:var(--text-light);"></p>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+(function () {
+    const fileInput  = document.getElementById('fotoInput');
+    const modal      = document.getElementById('cropModal');
+    const cropImg    = document.getElementById('cropImage');
+    const btnCancel  = document.getElementById('cropCancel');
+    const btnSave    = document.getElementById('cropSave');
+    const statusEl   = document.getElementById('cropStatus');
+    let   cropper    = null;
+
+    fileInput.addEventListener('change', function () {
+        const file = this.files[0];
+        if (!file) return;
+
+        if (file.size > 2 * 1024 * 1024) {
+            alert('La imagen no puede superar los 2 MB.');
+            this.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            cropImg.src = e.target.result;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            if (cropper) { cropper.destroy(); cropper = null; }
+            cropper = new Cropper(cropImg, {
+                aspectRatio: 1,
+                viewMode: 1,
+                dragMode: 'move',
+                autoCropArea: 0.9,
+                restore: false,
+                guides: false,
+                center: true,
+                highlight: false,
+                cropBoxMovable: true,
+                cropBoxResizable: true,
+                toggleDragModeOnDblclick: false,
+            });
+        };
+        reader.readAsDataURL(file);
+        this.value = '';
+    });
+
+    btnCancel.addEventListener('click', closeModal);
+
+    modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeModal();
+    });
+
+    btnSave.addEventListener('click', function (e) {
+        e.stopImmediatePropagation();
+        if (!cropper) return;
+
+        btnSave.disabled = true;
+        statusEl.textContent = 'Subiendo…';
+
+        const canvas = cropper.getCroppedCanvas({ width: 400, height: 400 });
+        canvas.toBlob(function (blob) {
+            const fd = new FormData();
+            fd.append('action', 'subirFotoPerfil');
+            fd.append('foto', blob, 'perfil.jpg');
+
+            fetch('index.php', { method: 'POST', body: fd })
+                .then(function (resp) {
+                    if (resp.redirected || resp.ok) {
+                        statusEl.textContent = '¡Foto actualizada!';
+                        setTimeout(function () {
+                            window.location.href = 'index.php?page=viewEditarPerfil';
+                        }, 700);
+                    } else {
+                        statusEl.textContent = 'Error al subir. Intenta de nuevo.';
+                        btnSave.disabled = false;
+                    }
+                })
+                .catch(function () {
+                    statusEl.textContent = 'Error de red. Intenta de nuevo.';
+                    btnSave.disabled = false;
+                });
+        }, 'image/jpeg', 0.9);
+    });
+
+    function closeModal() {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+        if (cropper) { cropper.destroy(); cropper = null; }
+        statusEl.textContent = '';
+        btnSave.disabled = false;
+    }
+})();
+</script>

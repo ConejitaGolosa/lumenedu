@@ -76,9 +76,12 @@ class Perfil {
     public static function actualizarFoto(int $idUsuario, string $ruta): bool {
         $db   = new Conexion();
         $conn = $db->getConexion();
-        $stmt = $conn->prepare(
-            "UPDATE Perfil SET FotoPerfil = ? WHERE IdPerfil = ?"
-        );
+        // Garantiza que la fila exista (usuarios registrados antes del sistema de perfiles)
+        $ins = $conn->prepare("INSERT IGNORE INTO Perfil (IdPerfil) VALUES (?)");
+        $ins->bind_param('i', $idUsuario);
+        $ins->execute();
+        $ins->close();
+        $stmt = $conn->prepare("UPDATE Perfil SET FotoPerfil = ? WHERE IdPerfil = ?");
         $stmt->bind_param('si', $ruta, $idUsuario);
         $ok = $stmt->execute();
         $stmt->close();

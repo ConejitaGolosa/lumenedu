@@ -2,9 +2,14 @@
 // Vista: feed principal de foros comunitarios
 require_once __DIR__ . '/../models/modelForo.php';
 
-$foros      = Foro::getLista(100);
 $idUsuario  = $_SESSION['usuario_id'] ?? null;
 $categorias = ['General', 'Matemáticas', 'Ciencias', 'Historia', 'Lenguaje', 'Tecnología', 'Arte', 'Otros'];
+
+$q         = trim($_GET['q']         ?? '');
+$catFilter = trim($_GET['categoria'] ?? '');
+$hasSearch = ($q !== '' || $catFilter !== '');
+
+$foros = $hasSearch ? Foro::buscar($q, $catFilter) : Foro::getLista(100);
 ?>
 
 <div class="page-header page-header-row">
@@ -13,6 +18,29 @@ $categorias = ['General', 'Matemáticas', 'Ciencias', 'Historia', 'Lenguaje', 'T
         <p>Debates y preguntas sobre materias, técnicas de estudio y más.</p>
     </div>
 </div>
+
+<!-- ── BUSCADOR ─────────────────────────────────────────────── -->
+<form class="search-bar" method="GET" action="index.php">
+    <input type="hidden" name="page" value="viewForos">
+    <input type="text" name="q" placeholder="Buscar por título o contenido…"
+           value="<?= htmlspecialchars($q) ?>">
+    <select name="categoria">
+        <option value="">Todas las categorías</option>
+        <?php foreach ($categorias as $cat): ?>
+            <option value="<?= $cat ?>" <?= $catFilter === $cat ? 'selected' : '' ?>><?= $cat ?></option>
+        <?php endforeach; ?>
+    </select>
+    <div style="display:flex; gap:.5rem;">
+        <button type="submit" class="btn btn-primary">Buscar</button>
+        <?php if ($hasSearch): ?>
+            <a href="index.php?page=viewForos" class="btn btn-secondary">Limpiar</a>
+        <?php endif; ?>
+    </div>
+</form>
+
+<?php if ($hasSearch): ?>
+    <p class="text-muted mb-2"><?= count($foros) ?> resultado(s)</p>
+<?php endif; ?>
 
 <?php if ($idUsuario): ?>
     <div class="create-panel">

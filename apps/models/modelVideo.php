@@ -36,18 +36,18 @@ class Video {
         return false;
     }
 
-    // El profesor asigna título, descripción y privacidad a un video ya aprobado.
+    // El profesor asigna título, descripción, categoría y privacidad a un video ya aprobado.
     // Solo funciona si el video está en estado 'Aprobado' y pertenece al profesor.
-    public static function publicar($idVideo, $idProfesor, $titulo, $descripcion, $privacidad) {
+    public static function publicar($idVideo, $idProfesor, $titulo, $descripcion, $privacidad, $categoria = 'Otros') {
         $db   = new Conexion();
         $conn = $db->getConexion();
 
         $fecha = date('Y-m-d H:i:s');
         $query = "UPDATE Video
-                  SET Titulo=?, Descripcion=?, Privacidad=?, Estado='Publicado', FechaPublicacion=?
+                  SET Titulo=?, Descripcion=?, Privacidad=?, Categoria=?, Estado='Publicado', FechaPublicacion=?
                   WHERE IdVideo=? AND IdProfesor=? AND Estado='Aprobado'";
         $stmt  = $conn->prepare($query);
-        $stmt->bind_param("ssssii", $titulo, $descripcion, $privacidad, $fecha, $idVideo, $idProfesor);
+        $stmt->bind_param("sssssii", $titulo, $descripcion, $privacidad, $categoria, $fecha, $idVideo, $idProfesor);
         $stmt->execute();
         $ok = $stmt->affected_rows > 0;
         $stmt->close();
@@ -76,37 +76,66 @@ class Video {
         return $videos;
     }
 
-    // Videos visibles para el listado público, filtrados por tipo de usuario.
-    // $ticketedProfs: array de IdProfesor que el Suscriptor ha desbloqueado este mes.
-    public static function getListaVisible($tipoUsuario, $ticketedProfs = []) {
+    // Todos los videos publicados no-privados (el acceso real se controla en puedeVer()).
+    public static function getListaVisible(): array {
         $db   = new Conexion();
         $conn = $db->getConexion();
-
-        if ($tipoUsuario === 'EstudianteGratis' || !$tipoUsuario) {
-            // Solo videos públicos
-            $query = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad,
-                             v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
-                      FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
-                      WHERE v.Estado = 'Publicado' AND v.Privacidad = 'Publico'
-                      ORDER BY v.FechaPublicacion DESC";
-            $stmt = $conn->prepare($query);
-
-        } else {
-            // Suscriptor, Creador, Administrador, Moderador: ven públicos y de suscriptores.
-            // El acceso real se controla en puedeVer() al abrir el video.
-            $query = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad,
-                             v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
-                      FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
-                      WHERE v.Estado = 'Publicado' AND v.Privacidad != 'Privado'
-                      ORDER BY v.FechaPublicacion DESC";
-            $stmt  = $conn->prepare($query);
-        }
-
+        $stmt = $conn->prepare(
+            "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad, v.Categoria,
+                    v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
+             FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
+             WHERE v.Estado = 'Publicado' AND v.Privacidad != 'Privado'
+             ORDER BY v.FechaPublicacion DESC"
+        );
         $stmt->execute();
         $videos = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         $db->cerrarConexion();
         return $videos;
+    }
+
+    // Búsqueda de videos con filtros opcionales.
+    public static function buscar(string $q = '', string $autor = '', string $categoria = '', string $tipo = ''): array {
+        $db     = new Conexion();
+        $conn   = $db->getConexion();
+        $where  = ["v.Estado = 'Publicado'", "v.Privacidad != 'Privado'"];
+        $params = [];
+        $types  = '';
+
+        if ($q !== '') {
+            $like    = '%' . $q . '%';
+            $where[] = "(v.Titulo LIKE ? OR v.Descripcion LIKE ?)";
+            $params  = array_merge($params, [$like, $like]);
+            $types  .= 'ss';
+        }
+        if ($autor !== '') {
+            $where[]  = "u.NombreUsuario LIKE ?";
+            $params[] = '%' . $autor . '%';
+            $types   .= 's';
+        }
+        if ($categoria !== '') {
+            $where[]  = "v.Categoria = ?";
+            $params[] = $categoria;
+            $types   .= 's';
+        }
+        if ($tipo === 'Publico') {
+            $where[] = "v.Privacidad = 'Publico'";
+        } elseif ($tipo === 'Suscriptores') {
+            $where[] = "v.Privacidad = 'Suscriptores'";
+        }
+
+        $sql  = "SELECT v.IdVideo, v.Titulo, v.Descripcion, v.Privacidad, v.Categoria,
+                        v.FechaPublicacion, u.NombreUsuario AS Profesor, v.IdProfesor
+                 FROM Video v JOIN Usuarios u ON u.IdUsuario = v.IdProfesor
+                 WHERE " . implode(' AND ', $where) . "
+                 ORDER BY v.FechaPublicacion DESC LIMIT 200";
+        $stmt = $conn->prepare($sql);
+        if ($params) $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
     }
 
     // Video individual con datos del profesor.

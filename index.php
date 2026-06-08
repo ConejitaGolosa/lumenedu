@@ -118,6 +118,15 @@ function rolBadge(string $tipo): string {
     if ($tipo === 'Moderador')     return '<span class="rol-badge rol-mod">Mod</span>';
     return '';
 }
+
+// Helper: avatar circular (foto de perfil o inicial)
+function avatar(string $nombre, ?string $foto, string $size = '32px'): string {
+    $initial = htmlspecialchars(mb_strtoupper(mb_substr($nombre, 0, 1)));
+    if ($foto) {
+        return '<img src="' . htmlspecialchars($foto) . '" alt="" class="comment-avatar" style="width:' . $size . ';height:' . $size . ';">';
+    }
+    return '<div class="comment-avatar comment-avatar-default" style="width:' . $size . ';height:' . $size . ';">' . $initial . '</div>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">

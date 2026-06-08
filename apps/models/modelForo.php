@@ -53,6 +53,49 @@ class Foro {
         return $rows;
     }
 
+    // Búsqueda de foros con filtros opcionales.
+    public static function buscar(string $q = '', string $categoria = '', int $limit = 100): array {
+        $db     = new Conexion();
+        $conn   = $db->getConexion();
+        $where  = [];
+        $params = [];
+        $types  = '';
+
+        if ($q !== '') {
+            $like    = '%' . $q . '%';
+            $where[] = "(f.Titulo LIKE ? OR f.Contenido LIKE ?)";
+            $params  = array_merge($params, [$like, $like]);
+            $types  .= 'ss';
+        }
+        if ($categoria !== '') {
+            $where[]  = "f.Categoria = ?";
+            $params[] = $categoria;
+            $types   .= 's';
+        }
+
+        $params[] = $limit;
+        $types   .= 'i';
+        $whereStr = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+        $stmt = $conn->prepare(
+            "SELECT f.IdForo, f.Titulo, f.Categoria, f.FechaPublicacion,
+                    u.NombreUsuario AS Autor, u.TipoUsuario,
+                    (SELECT COUNT(*) FROM Comentario c
+                     WHERE c.IdForo = f.IdForo AND c.IdComentarioPadre IS NULL) AS TotalComentarios
+             FROM Foro f
+             JOIN Usuarios u ON u.IdUsuario = f.IdAutor
+             $whereStr
+             ORDER BY f.FechaPublicacion DESC
+             LIMIT ?"
+        );
+        $stmt->bind_param($types, ...$params);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
     // Datos completos de un hilo.
     public static function getById($idForo) {
         $db   = new Conexion();

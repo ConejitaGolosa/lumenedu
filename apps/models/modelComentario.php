@@ -40,9 +40,10 @@ class Comentario {
 
         $stmt = $conn->prepare(
             "SELECT c.IdComentario, c.Contenido, c.FechaComentario, c.IdUsuario,
-                    u.NombreUsuario, u.TipoUsuario
+                    u.NombreUsuario, u.TipoUsuario, p.FotoPerfil
              FROM Comentario c
              JOIN Usuarios u ON u.IdUsuario = c.IdUsuario
+             LEFT JOIN Perfil p ON p.IdPerfil = c.IdUsuario
              WHERE c.IdVideo = ? AND c.IdComentarioPadre IS NULL
              ORDER BY c.FechaComentario ASC"
         );
@@ -61,9 +62,10 @@ class Comentario {
 
         $stmt = $conn->prepare(
             "SELECT c.IdComentario, c.Contenido, c.FechaComentario, c.IdUsuario,
-                    u.NombreUsuario, u.TipoUsuario
+                    u.NombreUsuario, u.TipoUsuario, p.FotoPerfil
              FROM Comentario c
              JOIN Usuarios u ON u.IdUsuario = c.IdUsuario
+             LEFT JOIN Perfil p ON p.IdPerfil = c.IdUsuario
              WHERE c.IdForo = ? AND c.IdComentarioPadre IS NULL
              ORDER BY c.FechaComentario ASC"
         );
@@ -82,9 +84,10 @@ class Comentario {
 
         $stmt = $conn->prepare(
             "SELECT c.IdComentario, c.Contenido, c.FechaComentario, c.IdUsuario,
-                    u.NombreUsuario, u.TipoUsuario
+                    u.NombreUsuario, u.TipoUsuario, p.FotoPerfil
              FROM Comentario c
              JOIN Usuarios u ON u.IdUsuario = c.IdUsuario
+             LEFT JOIN Perfil p ON p.IdPerfil = c.IdUsuario
              WHERE c.IdComentarioPadre = ?
              ORDER BY c.FechaComentario ASC"
         );

@@ -25,6 +25,7 @@ $opciones = [
     'Suscriptores' => 'Solo suscriptores con ticket',
     'Privado'      => 'Privado — solo yo',
 ];
+$categoriasVideo = ['Matemáticas','Física','Geometría','Química','Biología','Historia','Lenguaje','Tecnología','Otros'];
 ?>
 
 <div class="page-header">
@@ -49,6 +50,18 @@ $opciones = [
             <label for="descripcion">Descripción <small>(opcional)</small></label>
             <textarea id="descripcion" name="descripcion" rows="5" maxlength="2048"
                       placeholder="Describe el contenido del video…"><?= htmlspecialchars($video['Descripcion'] ?? '') ?></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="categoria">Categoría del contenido</label>
+            <select id="categoria" name="categoria">
+                <?php foreach ($categoriasVideo as $cat): ?>
+                    <option value="<?= $cat ?>"
+                        <?= ($video['Categoria'] ?? 'Otros') === $cat ? 'selected' : '' ?>>
+                        <?= $cat ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
         </div>
 
         <div class="form-group">

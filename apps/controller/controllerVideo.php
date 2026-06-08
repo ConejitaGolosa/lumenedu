@@ -98,6 +98,7 @@ switch ($action) {
         $titulo      = trim($_POST['titulo']        ?? '');
         $descripcion = trim($_POST['descripcion']   ?? '');
         $privacidad  = $_POST['privacidad']          ?? '';
+        $categoria   = $_POST['categoria']           ?? 'Otros';
 
         if (!$idVideo || empty($titulo)) {
             $_SESSION['error'] = 'El título es obligatorio.';
@@ -111,7 +112,7 @@ switch ($action) {
             exit;
         }
 
-        if (Video::publicar($idVideo, $idUsuario, $titulo, $descripcion, $privacidad)) {
+        if (Video::publicar($idVideo, $idUsuario, $titulo, $descripcion, $privacidad, $categoria)) {
             $_SESSION['mensaje'] = 'Video publicado correctamente.';
             header('Location: index.php?page=viewMisVideos');
         } else {
