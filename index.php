@@ -159,7 +159,10 @@ function avatar(string $nombre, ?string $foto, string $size = '32px'): string {
 
 <header>
     <div class="nav-inner">
-        <a href="index.php?page=viewHome" class="nav-logo">Lumen<span>Edu</span></a>
+        <a href="index.php?page=viewHome" class="nav-logo">
+            <img src="public/img/LumenLogo.png" alt="" class="nav-logo-img">
+            Lumen<span>Edu</span>
+        </a>
 
         <button class="nav-toggle" aria-label="Menú" aria-expanded="false">
             <span></span><span></span><span></span>
@@ -259,7 +262,10 @@ function avatar(string $nombre, ?string $foto, string $size = '32px'): string {
 </main>
 
 <footer>
-    <p>&copy; <?= date("Y") ?> LumenEdu &mdash; Plataforma educativa</p>
+    <p>
+        <img src="public/img/LumenLogo.png" alt="" class="footer-logo-img">
+        &copy; <?= date("Y") ?> LumenEdu &mdash; Plataforma educativa
+    </p>
 </footer>
 
 <script src="public/js/main.js"></script>

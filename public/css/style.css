@@ -133,10 +133,28 @@ header {
   letter-spacing: -0.02em;
   flex-shrink: 0;
   transition: color var(--t);
+  display: flex;
+  align-items: center;
+  gap: .35rem;
 }
 .nav-logo:hover { color: var(--accent) !important; }
 .nav-logo span {
   color: var(--accent);
+}
+.nav-logo-img {
+  height: 30px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+}
+
+.footer-logo-img {
+  height: 20px;
+  width: auto;
+  vertical-align: middle;
+  margin-right: .3rem;
+  position: relative;
+  top: -1px;
 }
 
 /* Nav links wrapper — permite scroll horizontal */
