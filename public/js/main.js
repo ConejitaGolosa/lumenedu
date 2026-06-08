@@ -29,6 +29,38 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // ── NAV SCROLL BUTTON ────────────────────────────────────────
+  const navLinksEl  = document.querySelector('.nav-links');
+  const navScrollBtn = document.getElementById('navScrollBtn');
+  const navWrap     = document.querySelector('.nav-links-wrap');
+
+  if (navLinksEl && navScrollBtn) {
+    function updateScrollBtn() {
+      const hasOverflow = navLinksEl.scrollWidth > navLinksEl.clientWidth + 2;
+      const atEnd = navLinksEl.scrollLeft + navLinksEl.clientWidth >= navLinksEl.scrollWidth - 8;
+
+      if (!hasOverflow) {
+        navScrollBtn.classList.remove('visible');
+        navWrap?.classList.remove('has-overflow');
+        return;
+      }
+
+      navScrollBtn.classList.add('visible');
+      navWrap?.classList.toggle('has-overflow', !atEnd);
+      navScrollBtn.innerHTML  = atEnd ? '&#8249;' : '&#8250;'; // ‹ ›
+      navScrollBtn.title      = atEnd ? 'Volver al inicio' : 'Más opciones';
+    }
+
+    updateScrollBtn();
+    navLinksEl.addEventListener('scroll', updateScrollBtn);
+    window.addEventListener('resize', updateScrollBtn);
+
+    navScrollBtn.addEventListener('click', () => {
+      const atEnd = navLinksEl.scrollLeft + navLinksEl.clientWidth >= navLinksEl.scrollWidth - 8;
+      navLinksEl.scrollBy({ left: atEnd ? -navLinksEl.scrollWidth : 180, behavior: 'smooth' });
+    });
+  }
+
   // ── ACTIVE NAV LINK ──────────────────────────────────────────
   const currentPage = new URLSearchParams(location.search).get('page') || 'viewHome';
   document.querySelectorAll('.nav-links a[href]').forEach(a => {

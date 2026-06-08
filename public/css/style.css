@@ -139,6 +139,63 @@ header {
   color: var(--accent);
 }
 
+/* Nav links wrapper — permite scroll horizontal */
+.nav-links-wrap {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Fade derecho: indica que hay más contenido */
+.nav-links-wrap::after {
+  content: '';
+  position: absolute;
+  right: 34px;
+  top: 0;
+  bottom: 0;
+  width: 36px;
+  background: linear-gradient(to right, transparent, var(--surface));
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t);
+}
+.nav-links-wrap.has-overflow::after {
+  opacity: 1;
+}
+
+/* Botón circular de scroll */
+.nav-scroll-btn {
+  display: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t);
+  z-index: 2;
+  box-shadow: var(--shadow-sm);
+}
+.nav-scroll-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(139,105,20,.18), var(--shadow-sm);
+  transform: scale(1.08);
+}
+.nav-scroll-btn.visible {
+  display: flex;
+}
+
 /* Nav links row */
 .nav-links {
   display: flex;
@@ -146,8 +203,13 @@ header {
   gap: .15rem;
   flex: 1;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  min-width: 0;
 }
+.nav-links::-webkit-scrollbar { display: none; }
 
 .nav-links a {
   font-size: .82rem;
@@ -1133,6 +1195,10 @@ details.panel .panel-body {
 
   /* Hamburger visible */
   .nav-toggle { display: flex; }
+
+  /* Ocultar botón de scroll en móvil (el hamburguesa lo reemplaza) */
+  .nav-scroll-btn { display: none !important; }
+  .nav-links-wrap::after { display: none; }
 
   /* Nav links become a dropdown */
   .nav-links {

@@ -94,6 +94,7 @@ if (isset($_SESSION['usuario_id'])) {
             <span></span><span></span><span></span>
         </button>
 
+        <div class="nav-links-wrap">
         <nav class="nav-links">
             <a href="index.php?page=viewHome">Inicio</a>
             <a href="index.php?page=viewVideos">Videos</a>
@@ -142,6 +143,8 @@ if (isset($_SESSION['usuario_id'])) {
                 <a href="index.php?page=viewRegistro">Registrarse</a>
             <?php endif; ?>
         </nav>
+        <button class="nav-scroll-btn" id="navScrollBtn" aria-label="Más opciones" title="Más opciones">›</button>
+        </div><!-- /.nav-links-wrap -->
 
         <?php if (isset($_SESSION['usuario_id'])): ?>
         <div class="nav-user">
