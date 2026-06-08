@@ -59,32 +59,64 @@ class Mensaje {
     public static function getConversaciones(int $idUsuario): array {
         $db   = new Conexion();
         $conn = $db->getConexion();
+        // Agrupa por contacto tomando el mensaje de mayor IdMensaje (evita duplicados)
         $stmt = $conn->prepare(
-            "SELECT
-                u.IdUsuario, u.NombreUsuario, u.TipoUsuario,
-                p.FotoPerfil,
-                sub.ContenidoMensaje AS UltimoMensaje,
-                sub.FechaMensaje,
-                SUM(CASE WHEN m2.IdReceptor = ? AND m2.EstadoMensaje = 'NoLeido' THEN 1 ELSE 0 END) AS NoLeidos
+            "SELECT u.IdUsuario, u.NombreUsuario, u.TipoUsuario, p.FotoPerfil,
+                    m.ContenidoMensaje AS UltimoMensaje, m.FechaMensaje,
+                    COALESCE(nr.NoLeidos, 0) AS NoLeidos
              FROM (
-                SELECT
-                    IF(IdEmisor = ?, IdReceptor, IdEmisor) AS OtroUsuario,
-                    ContenidoMensaje, FechaMensaje
-                FROM Mensaje
-                WHERE IdEmisor = ? OR IdReceptor = ?
-                ORDER BY FechaMensaje DESC
-             ) sub
-             JOIN Usuarios u ON u.IdUsuario = sub.OtroUsuario
+                 SELECT IF(IdEmisor = ?, IdReceptor, IdEmisor) AS OtroId,
+                        MAX(IdMensaje) AS MaxId
+                 FROM Mensaje
+                 WHERE IdEmisor = ? OR IdReceptor = ?
+                 GROUP BY OtroId
+             ) g
+             JOIN Mensaje m ON m.IdMensaje = g.MaxId
+             JOIN Usuarios u ON u.IdUsuario = g.OtroId
              LEFT JOIN Perfil p ON p.IdPerfil = u.IdUsuario
-             JOIN Mensaje m2 ON (m2.IdEmisor = u.IdUsuario AND m2.IdReceptor = ?)
-                             OR (m2.IdEmisor = ? AND m2.IdReceptor = u.IdUsuario)
-             GROUP BY u.IdUsuario, u.NombreUsuario, u.TipoUsuario, p.FotoPerfil, sub.ContenidoMensaje, sub.FechaMensaje
-             ORDER BY sub.FechaMensaje DESC"
+             LEFT JOIN (
+                 SELECT IdEmisor, COUNT(*) AS NoLeidos
+                 FROM Mensaje
+                 WHERE IdReceptor = ? AND EstadoMensaje = 'NoLeido'
+                 GROUP BY IdEmisor
+             ) nr ON nr.IdEmisor = u.IdUsuario
+             ORDER BY m.FechaMensaje DESC"
         );
-        $stmt->bind_param('iiiiii', $idUsuario, $idUsuario, $idUsuario, $idUsuario, $idUsuario, $idUsuario);
+        $stmt->bind_param('iiii', $idUsuario, $idUsuario, $idUsuario, $idUsuario);
         $stmt->execute();
         $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
+    // Mensajes nuevos desde cierto IdMensaje (para polling AJAX)
+    public static function getMensajesDesde(int $idA, int $idB, int $desdeId): array {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare(
+            "SELECT m.IdMensaje, m.IdEmisor, m.IdReceptor,
+                    m.ContenidoMensaje, m.FechaMensaje
+             FROM Mensaje m
+             WHERE ((m.IdEmisor = ? AND m.IdReceptor = ?)
+                 OR (m.IdEmisor = ? AND m.IdReceptor = ?))
+               AND m.IdMensaje > ?
+             ORDER BY m.FechaMensaje ASC"
+        );
+        $stmt->bind_param('iiiii', $idA, $idB, $idB, $idA, $desdeId);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        // Marcar como leídos los recibidos por idA
+        if (!empty($rows)) {
+            $upd = $conn->prepare(
+                "UPDATE Mensaje SET EstadoMensaje = 'Leido'
+                 WHERE IdEmisor = ? AND IdReceptor = ? AND EstadoMensaje = 'NoLeido'"
+            );
+            $upd->bind_param('ii', $idB, $idA);
+            $upd->execute();
+            $upd->close();
+        }
         $db->cerrarConexion();
         return $rows;
     }

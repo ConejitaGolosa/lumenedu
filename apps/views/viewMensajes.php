@@ -144,7 +144,45 @@ $todosUsuarios  = $idConversacion ? [] : Perfil::getUsuariosActivos($idUsuario);
 </div><!-- /.chat-layout -->
 
 <script>
-// Auto-scroll al último mensaje
-const cm = document.getElementById('chatMessages');
-if (cm) cm.scrollTop = cm.scrollHeight;
+(function() {
+    const cm = document.getElementById('chatMessages');
+    if (!cm) return;
+    cm.scrollTop = cm.scrollHeight;
+
+    const idOtro = <?= $idConversacion ?>;
+    if (!idOtro) return;
+
+    const idMio = <?= $idUsuario ?>;
+    let ultimoId = <?= !empty($mensajes) ? (int)end($mensajes)['IdMensaje'] : 0 ?>;
+
+    function esc(s) {
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+    }
+
+    function appendMsg(m) {
+        const wrap = document.createElement('div');
+        wrap.className = 'chat-bubble-wrap ' + (m.IdEmisor == idMio ? 'mine' : 'theirs');
+        const hora = (m.FechaMensaje || '').substring(11, 16);
+        wrap.innerHTML = '<div class="chat-bubble">' + esc(m.ContenidoMensaje) + '</div>'
+                       + '<span class="chat-ts">' + hora + '</span>';
+        cm.appendChild(wrap);
+    }
+
+    function poll() {
+        fetch('apps/api/chat.php?tipo=dm&usuario=' + idOtro + '&desde_id=' + ultimoId)
+            .then(r => r.json())
+            .then(data => {
+                if (!Array.isArray(data) || !data.length) return;
+                const atBottom = cm.scrollHeight - cm.scrollTop <= cm.clientHeight + 60;
+                data.forEach(m => {
+                    appendMsg(m);
+                    ultimoId = Math.max(ultimoId, parseInt(m.IdMensaje) || 0);
+                });
+                if (atBottom) cm.scrollTop = cm.scrollHeight;
+            })
+            .catch(() => {});
+    }
+
+    setInterval(poll, 3000);
+})();
 </script>

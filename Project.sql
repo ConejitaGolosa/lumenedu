@@ -503,4 +503,3 @@ CREATE TABLE IF NOT EXISTS RecuperacionPassword (
     Usado           TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (IdUsuario) REFERENCES Usuarios(IdUsuario)
 );
-SELECT * FROM Mensaje;

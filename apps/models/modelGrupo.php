@@ -129,6 +129,26 @@ class Grupo {
         return $rows;
     }
 
+    // Mensajes nuevos desde cierto IdMensaje (para polling AJAX)
+    public static function getMensajesDesde(int $idGrupo, int $desdeId): array {
+        $db   = new Conexion();
+        $conn = $db->getConexion();
+        $stmt = $conn->prepare(
+            "SELECT mg.IdMensaje, mg.IdEmisor, mg.Contenido, mg.FechaEnvio,
+                    u.NombreUsuario, u.TipoUsuario
+             FROM MensajeGrupo mg
+             JOIN Usuarios u ON u.IdUsuario = mg.IdEmisor
+             WHERE mg.IdGrupo = ? AND mg.IdMensaje > ?
+             ORDER BY mg.FechaEnvio ASC"
+        );
+        $stmt->bind_param('ii', $idGrupo, $desdeId);
+        $stmt->execute();
+        $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+        $db->cerrarConexion();
+        return $rows;
+    }
+
     // Enviar mensaje en grupo
     public static function enviarMensaje(int $idGrupo, int $idEmisor, string $contenido): bool {
         $contenido = mb_substr(trim($contenido), 0, 1024);
