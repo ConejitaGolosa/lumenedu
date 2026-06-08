@@ -188,6 +188,38 @@ lumen/
 
 ## Bitácora de cambios
 
+### 2026-06-08 — Identidad visual, baneo, AJAX en comentarios y buscadores
+
+**Archivos modificados/añadidos:** `index.php`, `public/img/LumenLogo.png`, `public/css/style.css`, `apps/models/modelUser.php`, `apps/models/modelComentario.php`, `apps/controller/controllerAdmin.php`, `apps/views/viewAdminPanel.php`, `apps/api/comentarios.php`, `apps/views/viewVideo.php`, `apps/views/viewForo.php`, `apps/views/viewVideos.php`, `apps/views/viewForos.php`, `apps/views/viewEditarPerfil.php`, `apps/views/viewPublicarVideo.php`, `apps/models/modelVideo.php`, `apps/models/modelForo.php`, `apps/controller/controllerVideo.php`
+
+#### Logo e identidad visual
+- Logo `LumenLogo.png` añadido a la barra de navegación (30 px, junto al texto "LumenEdu") y al footer (20 px junto al copyright), y como favicon en la pestaña del navegador.
+
+#### Sistema de baneo de usuarios (solo Administrador)
+- `modelUser`: métodos `banear()`, `desbanear()`, `getBaneados()`, `isBaneado()`.
+- `index.php`: check de baneo en cada petición; si el usuario está baneado se destruye su sesión al instante y se redirige al login con mensaje de error, sin esperar a que haga logout manualmente.
+- `controllerAdmin`: acciones `banearUsuario` y `desbanearUsuario`.
+- `viewAdminPanel`: sección *Banear usuario* (dropdown de activos + confirmación) y sección *Usuarios baneados* (tabla con nombre, correo, rol y botón "Quitar baneo" por fila).
+
+#### Polling AJAX en comentarios de videos y foros
+- Nuevo endpoint `apps/api/comentarios.php` que devuelve JSON con comentarios/respuestas más nuevos que un ID cursor.
+- `modelComentario`: `getDesde()` y `getMaxId()`.
+- `viewVideo` y `viewForo`: poll cada 5 segundos; los comentarios raíz nuevos se insertan antes del formulario y las respuestas se añaden al hilo correcto, todo sin recargar la página. El botón *Responder* funciona también en los comentarios añadidos vía AJAX.
+
+#### Foto de perfil en comentarios y recorte de imagen
+- `modelComentario`: las tres consultas (getByVideo, getByForo, getRespuestas) incluyen `LEFT JOIN Perfil` para obtener `FotoPerfil`.
+- `viewVideo` y `viewForo`: helper `avatar()` usado en comentarios raíz (32 px) y respuestas (26 px).
+- `viewEditarPerfil`: modal de recorte con **Cropper.js** (CDN) — al seleccionar una imagen se abre el recortador con aspecto 1:1, zoom y arrastre; al confirmar se sube el blob JPEG via fetch sin recargar el formulario completo.
+
+#### Buscador de videos y foros con filtros
+- `modelVideo`: `buscar(q, autor, categoria, tipo)` con cláusulas WHERE dinámicas; `getListaVisible()` simplificado para mostrar todos los videos publicados no privados a cualquier visitante.
+- `modelForo`: `buscar(q, categoria)`.
+- `viewVideos`: formulario de búsqueda con filtros de texto libre, autor, categoría y tipo de acceso; todos los videos se muestran aunque no seas suscriptor (el acceso restringido se bloquea solo al intentar abrirlos, con badge "Solo suscriptores" visible en la tarjeta).
+- `viewForos`: buscador por título/contenido y categoría.
+- `viewPublicarVideo`: selector de categoría (Matemáticas, Física, Geometría, Química, Biología, Historia, Lenguaje, Tecnología, Otros) al publicar un video.
+
+---
+
 ### 2026-05-12 15:10 — Documentación de instalación ampliada
 
 **Archivos modificados:** `README.md`
