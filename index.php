@@ -29,6 +29,7 @@ $controllerMap = [
     'crearForo'              => 'controllerForo',
     'comentarForo'           => 'controllerForo',
     'actualizarDiasMinimos'  => 'controllerProfesor',
+    'capturarPago'           => 'controllerPago',
 ];
 
 // Si el POST llegó vacío pero hay Content-Length, el archivo excedió post_max_size
@@ -53,7 +54,7 @@ $allowedPages = [
     'viewHome', 'viewLogin', 'viewRegistro', 'viewAbout', 'viewConfirmacion',
     'viewVideos', 'viewVideo', 'viewSubirVideo', 'viewMisVideos', 'viewPublicarVideo',
     'viewAdminPanel', 'viewNotificaciones', 'viewTickets', 'viewSolicitudes',
-    'viewForos', 'viewForo', 'viewConfigProfesor',
+    'viewForos', 'viewForo', 'viewConfigProfesor', 'viewSuscribirse',
 ];
 
 if (!in_array($page, $allowedPages)) {

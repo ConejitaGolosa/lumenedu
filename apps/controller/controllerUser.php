@@ -61,9 +61,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $usuario = new Usuario(null, $nombre, $email, $pass, $cat);
 
             if ($usuario->alta()) {
-                // Guarda el nombre para mostrarlo en la página de confirmación
-                $_SESSION['nuevo_nombre'] = $nombre;
-                header('Location: index.php?page=viewConfirmacion');
+                if ($cat === '2') {
+                    // Suscriptor: auto-login y redirigir al pago
+                    $_SESSION['usuario_id']     = $usuario->getId();
+                    $_SESSION['usuario_nombre'] = $nombre;
+                    $_SESSION['usuario_tipo']   = 'Suscriptor';
+                    $_SESSION['mensaje']        = '¡Cuenta creada! Completa el pago para activar tu suscripción.';
+                    header('Location: index.php?page=viewSuscribirse');
+                } else {
+                    // EstudianteGratis o Creador: flujo normal de confirmación
+                    $_SESSION['nuevo_nombre'] = $nombre;
+                    header('Location: index.php?page=viewConfirmacion');
+                }
             } else {
                 $_SESSION['error'] = 'El nombre de usuario o email ya están registrados.';
                 header('Location: index.php?page=viewRegistro');

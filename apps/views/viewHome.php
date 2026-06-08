@@ -1,6 +1,7 @@
 <?php
 // Vista parcial — dashboard de inicio según tipo de usuario
 require_once __DIR__ . '/../models/modelNotificacion.php';
+require_once __DIR__ . '/../config/config.php';
 
 $tipo      = $_SESSION['usuario_tipo']   ?? null;
 $idUsuario = (int)($_SESSION['usuario_id'] ?? 0);
@@ -93,7 +94,7 @@ $idUsuario = (int)($_SESSION['usuario_id'] ?? 0);
         <a href="index.php?page=viewNotificaciones" class="dashboard-link">Notificaciones<small>Alertas y novedades</small></a>
     </div>
     <div class="alert alert-warn mt-3">
-        Con una cuenta <strong>Suscriptor</strong> accedes a más contenido y a clases virtuales.
-        <a href="index.php?page=viewRegistro">Actualizar cuenta</a>
+        Con una suscripción accedes a más contenido, clases virtuales y 3 tickets mensuales.
+        <a href="index.php?page=viewSuscribirse" class="btn btn-primary btn-sm" style="margin-left:.75rem;">Suscribirse — USD <?= SUSCRIPCION_MONTO ?>/mes</a>
     </div>
 <?php endif; ?>
